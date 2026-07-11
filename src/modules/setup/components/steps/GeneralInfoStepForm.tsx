@@ -1,0 +1,155 @@
+import { useEffect, useRef } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import type { GeneralInfoData } from '@/api/setup';
+import { SettingsFormActions } from '@/modules/settings/components/SettingsSectionShell';
+import { CURRENCIES, DATE_FORMATS, TIMEZONES } from '../../constants';
+import { generalInfoSchema, type GeneralInfoFormValues } from '../../schemas/setup.schemas';
+import { FormField, SelectInput, TextInput } from '../FormField';
+
+interface Props {
+  initialData?: GeneralInfoData;
+  onSave: (data: GeneralInfoFormValues) => Promise<void>;
+  isSaving: boolean;
+  /** Solo lectura (configuración). Por defecto editable. */
+  readOnly?: boolean;
+  /** Autosave con debounce (wizard). En configuración usar false. */
+  autosave?: boolean;
+  onCancel?: () => void;
+}
+
+export function GeneralInfoStepForm({
+  initialData,
+  onSave,
+  isSaving,
+  readOnly = false,
+  autosave = true,
+  onCancel,
+}: Props) {
+  const onSaveRef = useRef(onSave);
+  useEffect(() => {
+    onSaveRef.current = onSave;
+  }, [onSave]);
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm<GeneralInfoFormValues>({
+    resolver: zodResolver(generalInfoSchema),
+    defaultValues: {
+      commercialName: initialData?.commercialName ?? '',
+      legalName: initialData?.legalName ?? '',
+      taxId: initialData?.taxId ?? '',
+      address: initialData?.address ?? '',
+      city: initialData?.city ?? '',
+      stateOrDepartment: initialData?.stateOrDepartment ?? '',
+      country: initialData?.country ?? '',
+      phone: initialData?.phone ?? '',
+      email: initialData?.email ?? '',
+      timezone: initialData?.timezone || 'America/Bogota',
+      currency: initialData?.currency || 'COP',
+      dateFormat: initialData?.dateFormat || 'DD/MM/YYYY',
+      timeFormat: (initialData?.timeFormat as '12h' | '24h') || '24h',
+    },
+  });
+
+  useEffect(() => {
+    if (!autosave || readOnly) return;
+
+    let timer: ReturnType<typeof setTimeout>;
+    const subscription = watch(() => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        void handleSubmit((data) => onSaveRef.current(data))();
+      }, 2000);
+    });
+    return () => {
+      clearTimeout(timer);
+      subscription.unsubscribe();
+    };
+  }, [watch, handleSubmit, autosave, readOnly]);
+
+  return (
+    <form
+      onSubmit={handleSubmit(async (data) => {
+        await onSaveRef.current(data);
+      })}
+      className="space-y-4"
+    >
+      <fieldset disabled={readOnly} className="min-w-0 space-y-4 border-0 p-0">
+        <div className="grid gap-4 md:grid-cols-2">
+          <FormField label="Nombre comercial *" error={errors.commercialName?.message}>
+            <TextInput {...register('commercialName')} />
+          </FormField>
+          <FormField label="Razón social" error={errors.legalName?.message}>
+            <TextInput {...register('legalName')} />
+          </FormField>
+          <FormField label="NIT / Documento fiscal" error={errors.taxId?.message}>
+            <TextInput {...register('taxId')} />
+          </FormField>
+          <FormField label="Teléfono *" error={errors.phone?.message}>
+            <TextInput {...register('phone')} />
+          </FormField>
+          <FormField label="Correo electrónico *" error={errors.email?.message}>
+            <TextInput type="email" {...register('email')} />
+          </FormField>
+          <FormField label="Dirección *" error={errors.address?.message}>
+            <TextInput {...register('address')} />
+          </FormField>
+          <FormField label="Ciudad *" error={errors.city?.message}>
+            <TextInput {...register('city')} />
+          </FormField>
+          <FormField label="Departamento / Estado" error={errors.stateOrDepartment?.message}>
+            <TextInput {...register('stateOrDepartment')} />
+          </FormField>
+          <FormField label="País *" error={errors.country?.message}>
+            <TextInput {...register('country')} />
+          </FormField>
+          <FormField label="Zona horaria *" error={errors.timezone?.message}>
+            <SelectInput {...register('timezone')}>
+              {TIMEZONES.map((tz) => (
+                <option key={tz} value={tz}>
+                  {tz}
+                </option>
+              ))}
+            </SelectInput>
+          </FormField>
+          <FormField label="Moneda *" error={errors.currency?.message}>
+            <SelectInput {...register('currency')}>
+              {CURRENCIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </SelectInput>
+          </FormField>
+          <FormField label="Formato de fecha *" error={errors.dateFormat?.message}>
+            <SelectInput {...register('dateFormat')}>
+              {DATE_FORMATS.map((f) => (
+                <option key={f} value={f}>
+                  {f}
+                </option>
+              ))}
+            </SelectInput>
+          </FormField>
+          <FormField label="Formato de hora *" error={errors.timeFormat?.message}>
+            <SelectInput {...register('timeFormat')}>
+              <option value="12h">12 horas</option>
+              <option value="24h">24 horas</option>
+            </SelectInput>
+          </FormField>
+        </div>
+        <p className="text-sm text-gray-500">
+          Logo: estructura preparada — la carga de archivos se implementará en una fase posterior.
+        </p>
+      </fieldset>
+
+      {!autosave && !readOnly && onCancel && (
+        <SettingsFormActions isSaving={isSaving} onCancel={onCancel} />
+      )}
+      {autosave && isSaving && <p className="text-sm text-primary-600">Guardando...</p>}
+    </form>
+  );
+}
