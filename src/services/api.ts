@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { tokenStorage } from '@/modules/auth/tokenStorage';
 import { refreshAccessToken } from '@/modules/auth/authSession';
+import { resolveApiBaseUrl } from '@/services/resolveApiBaseUrl';
 
 declare module 'axios' {
   interface AxiosRequestConfig {
@@ -18,7 +19,7 @@ function shouldAttemptRefresh(url?: string, config?: { _skipAuthRefresh?: boolea
 }
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? '/api',
+  baseURL: resolveApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },

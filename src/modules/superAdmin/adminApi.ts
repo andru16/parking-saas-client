@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { adminTokenStorage } from '@/modules/superAdmin/adminTokenStorage';
+import { resolveApiBaseUrl } from '@/services/resolveApiBaseUrl';
 
 declare module 'axios' {
   interface AxiosRequestConfig {
@@ -11,7 +12,7 @@ declare module 'axios' {
 const SKIP = ['/admin/auth/login', '/admin/auth/refresh', '/admin/auth/logout'];
 
 export const adminApi = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? '/api',
+  baseURL: resolveApiBaseUrl(),
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
 });

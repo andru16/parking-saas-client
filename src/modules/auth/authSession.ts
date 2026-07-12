@@ -3,10 +3,11 @@ import { tokenStorage } from '@/modules/auth/tokenStorage';
 import { notifySessionExpired } from '@/modules/auth/authEvents';
 import type { ApiResponse } from '@/api/types';
 import type { LoginResult } from '@/api/auth';
+import { resolveApiBaseUrl } from '@/services/resolveApiBaseUrl';
 
 /** Cliente dedicado para refresh — evita dependencia circular con el interceptor */
 const refreshClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? '/api',
+  baseURL: resolveApiBaseUrl(),
   withCredentials: true,
   headers: { 'Content-Type': 'application/json' },
 });
