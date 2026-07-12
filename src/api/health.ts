@@ -1,4 +1,5 @@
 import api from '@/services/api';
+import type { ApiResponse } from '@/api/types';
 
 export interface HealthResponse {
   status: string;
@@ -7,6 +8,10 @@ export interface HealthResponse {
 }
 
 export const getHealth = async (): Promise<HealthResponse> => {
-  const { data } = await api.get<HealthResponse>('/health');
-  return data;
+  const { data } = await api.get<ApiResponse<{ status: string }>>('/health');
+  return {
+    status: data.data?.status ?? 'ok',
+    message: data.message ?? 'API operativa',
+    timestamp: data.timestamp,
+  };
 };
