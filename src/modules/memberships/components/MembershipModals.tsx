@@ -11,6 +11,12 @@ import {
   useUpdateMembership,
 } from '@/modules/memberships/hooks/useMemberships';
 import { useOrgPaymentMethods } from '@/modules/payments/hooks/useOrgPayments';
+import { validatePersonContactFields } from '@/lib/validation/contactFields';
+import {
+  normalizePlate,
+  plateKindLabel,
+  resolveCategoryFromPlate,
+} from '@/modules/operations/utils/colombianPlate';
 
 function formatMoney(amount: number) {
   return new Intl.NumberFormat('es-CO', {
@@ -62,7 +68,6 @@ export function MembershipFormModal({
   const [vehicleMode, setVehicleMode] = useState<'existing' | 'plate'>('existing');
   const [vehicleId, setVehicleId] = useState(membership?.vehicleId?._id ?? '');
   const [plate, setPlate] = useState('');
-  const [vehicleCategoryId, setVehicleCategoryId] = useState('');
 
   const [membershipType, setMembershipType] = useState(
     membership?.membershipType ?? 'Mensualidad',
@@ -81,7 +86,9 @@ export function MembershipFormModal({
 
   const [members, setMembers] = useState<Array<{ _id: string; name: string }>>([]);
   const [vehicles, setVehicles] = useState<Array<{ _id: string; plate: string }>>([]);
-  const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([]);
+  const [categories, setCategories] = useState<
+    Array<{ id: string; name: string; icon: string }>
+  >([]);
   const [loadingOptions, setLoadingOptions] = useState(!isEdit);
 
   useEffect(() => {
@@ -95,7 +102,9 @@ export function MembershipFormModal({
         ]);
         if (!active) return;
         setMembers(membersRes.data.items.map((m) => ({ _id: m._id, name: m.name })));
-        setCategories(catsRes.data.categories.map((c) => ({ id: c.id, name: c.name })));
+        setCategories(
+          catsRes.data.categories.map((c) => ({ id: c.id, name: c.name, icon: c.icon })),
+        );
       } finally {
         if (active) setLoadingOptions(false);
       }
@@ -166,23 +175,44 @@ export function MembershipFormModal({
                 setError('Seleccione un cliente');
                 return;
               }
-              if (clientMode === 'new' && !newClient.name.trim()) {
-                setError('Ingrese el nombre del cliente');
-                return;
+              if (clientMode === 'new') {
+                const clientError = validatePersonContactFields({
+                  name: newClient.name,
+                  email: newClient.email,
+                  phone: newClient.phone,
+                });
+                if (clientError) {
+                  setError(clientError);
+                  return;
+                }
               }
               if (vehicleMode === 'existing' && !vehicleId) {
                 setError('Seleccione un vehículo o registre una placa');
                 return;
               }
+
+              let platePayload: { plate: string; vehicleCategoryId: string } | null = null;
               if (vehicleMode === 'plate') {
-                if (!plate.trim()) {
+                const normalizedPlate = normalizePlate(plate);
+                if (!normalizedPlate) {
                   setError('Ingrese la placa del vehículo');
                   return;
                 }
-                if (!vehicleCategoryId) {
-                  setError('Seleccione la categoría del vehículo');
+                const resolved = resolveCategoryFromPlate(normalizedPlate, categories);
+                if (resolved.message) {
+                  setError(resolved.message);
                   return;
                 }
+                if (!resolved.categoryId) {
+                  setError(
+                    'No se pudo detectar la categoría por la placa. Verifique el formato (ej. CBF424 o ZGT26F).',
+                  );
+                  return;
+                }
+                platePayload = {
+                  plate: normalizedPlate,
+                  vehicleCategoryId: resolved.categoryId,
+                };
               }
 
               await create.mutateAsync({
@@ -198,12 +228,7 @@ export function MembershipFormModal({
                         address: newClient.address.trim() || null,
                       },
                     }),
-                ...(vehicleMode === 'existing'
-                  ? { vehicleId }
-                  : {
-                      plate: plate.trim().toUpperCase(),
-                      vehicleCategoryId,
-                    }),
+                ...(vehicleMode === 'existing' ? { vehicleId } : platePayload!),
                 membershipType,
                 startDate,
                 endDate,
@@ -376,23 +401,39 @@ export function MembershipFormModal({
                 <input
                   required
                   value={plate}
-                  onChange={(e) => setPlate(e.target.value.toUpperCase())}
-                  placeholder="Placa *"
+                  onChange={(e) => setPlate(normalizePlate(e.target.value))}
+                  placeholder="Placa * (ej. CBF424 o ZGT26F)"
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-mono uppercase"
                 />
-                <select
-                  required
-                  value={vehicleCategoryId}
-                  onChange={(e) => setVehicleCategoryId(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                >
-                  <option value="">Categoría del vehículo *</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+                {(() => {
+                  const resolved = resolveCategoryFromPlate(normalizePlate(plate), categories);
+                  const detected = categories.find((c) => c.id === resolved.categoryId);
+                  if (!normalizePlate(plate)) {
+                    return (
+                      <p className="text-xs text-slate-500">
+                        La categoría se asigna automáticamente según el formato de la placa.
+                      </p>
+                    );
+                  }
+                  if (resolved.message) {
+                    return <p className="text-xs text-amber-700">{resolved.message}</p>;
+                  }
+                  if (detected) {
+                    return (
+                      <p className="text-xs text-emerald-700">
+                        Categoría detectada: <strong>{detected.name}</strong>
+                        {resolved.plateKind !== 'unknown' && (
+                          <> (placa de {plateKindLabel(resolved.plateKind)})</>
+                        )}
+                      </p>
+                    );
+                  }
+                  return (
+                    <p className="text-xs text-amber-700">
+                      No se pudo detectar la categoría. Use un formato válido de placa colombiana.
+                    </p>
+                  );
+                })()}
                 <p className="text-xs text-slate-500">
                   Si la placa ya existe, se reutiliza y se asocia al cliente.
                 </p>

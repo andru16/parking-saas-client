@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Copy, Pencil, Trash2 } from 'lucide-react';
 import {
   createOrgRole,
   deleteOrgRole,
@@ -10,6 +11,7 @@ import {
   updateOrgRole,
   type OrgRole,
 } from '@/api/users';
+import { confirmAction, showError, showSuccess } from '@/lib/dialogs';
 
 export function SettingsRolesPage() {
   const qc = useQueryClient();
@@ -24,7 +26,6 @@ export function SettingsRolesPage() {
 
   const [editing, setEditing] = useState<OrgRole | null>(null);
   const [creating, setCreating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const saveMutation = useMutation({
     mutationFn: async (payload: {
@@ -39,32 +40,40 @@ export function SettingsRolesPage() {
       }
       return createOrgRole(payload);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       void qc.invalidateQueries({ queryKey: ['org-roles'] });
       setEditing(null);
       setCreating(false);
-      setError(null);
+      await showSuccess('Rol guardado');
     },
-    onError: (err: unknown) => {
-      setError(
+    onError: async (err: unknown) => {
+      await showError(
+        'No se pudo guardar el rol',
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          'No se pudo guardar el rol',
+          'Intente de nuevo.',
       );
     },
   });
 
   const duplicateMutation = useMutation({
     mutationFn: (id: string) => duplicateOrgRole(id),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['org-roles'] }),
+    onSuccess: async () => {
+      void qc.invalidateQueries({ queryKey: ['org-roles'] });
+      await showSuccess('Rol duplicado');
+    },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteOrgRole(id),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['org-roles'] }),
-    onError: (err: unknown) => {
-      setError(
+    onSuccess: async () => {
+      void qc.invalidateQueries({ queryKey: ['org-roles'] });
+      await showSuccess('Rol eliminado');
+    },
+    onError: async (err: unknown) => {
+      await showError(
+        'No se pudo eliminar',
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          'No se pudo eliminar',
+          'Intente de nuevo.',
       );
     },
   });
@@ -101,12 +110,6 @@ export function SettingsRolesPage() {
         </div>
       </div>
 
-      {error && (
-        <p className="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error}
-        </p>
-      )}
-
       <div className="grid gap-3">
         {roles.map((role) => (
           <div key={role.id} className="rounded-xl border border-gray-200 bg-white p-4">
@@ -124,33 +127,50 @@ export function SettingsRolesPage() {
                   {role.isActive ? 'Activo' : 'Inactivo'}
                 </p>
               </div>
-              <div className="flex flex-wrap gap-2 text-sm">
+              <div className="flex items-center gap-1">
+                <span className="mr-1 hidden text-xs font-medium uppercase text-gray-400 sm:inline">
+                  Acciones
+                </span>
                 <button
                   type="button"
-                  className="text-primary-700 hover:underline"
+                  title="Editar permisos"
+                  aria-label={`Editar permisos de ${role.name}`}
+                  className="rounded-lg p-2 text-teal-700 hover:bg-teal-50"
                   onClick={() => {
                     setEditing(role);
                     setCreating(false);
                   }}
                 >
-                  Editar permisos
+                  <Pencil className="h-4 w-4" />
                 </button>
                 <button
                   type="button"
-                  className="text-gray-600 hover:underline"
+                  title="Duplicar"
+                  aria-label={`Duplicar rol ${role.name}`}
+                  className="rounded-lg p-2 text-slate-600 hover:bg-slate-100"
                   onClick={() => duplicateMutation.mutate(role.id)}
                 >
-                  Duplicar
+                  <Copy className="h-4 w-4" />
                 </button>
                 {!role.isSystem && (
                   <button
                     type="button"
-                    className="text-red-600 hover:underline"
+                    title="Eliminar"
+                    aria-label={`Eliminar rol ${role.name}`}
+                    className="rounded-lg p-2 text-red-600 hover:bg-red-50"
                     onClick={() => {
-                      if (confirm('¿Eliminar este rol?')) deleteMutation.mutate(role.id);
+                      void (async () => {
+                        const ok = await confirmAction({
+                          title: '¿Eliminar este rol?',
+                          text: `Se eliminará el rol “${role.name}”. Esta acción no se puede deshacer.`,
+                          confirmText: 'Eliminar',
+                          danger: true,
+                        });
+                        if (ok) deleteMutation.mutate(role.id);
+                      })();
                     }}
                   >
-                    Eliminar
+                    <Trash2 className="h-4 w-4" />
                   </button>
                 )}
               </div>

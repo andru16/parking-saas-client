@@ -4,8 +4,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import type { GeneralInfoData } from '@/api/setup';
 import { SettingsFormActions } from '@/modules/settings/components/SettingsSectionShell';
 import { CURRENCIES, DATE_FORMATS, TIMEZONES } from '../../constants';
-import { generalInfoSchema, type GeneralInfoFormValues } from '../../schemas/setup.schemas';
+import { generalInfoSchema, pickAllowed, type GeneralInfoFormValues } from '../../schemas/setup.schemas';
 import { FormField, SelectInput, TextInput } from '../FormField';
+import type { SetupStepSubmit } from '../../types';
 
 interface Props {
   initialData?: GeneralInfoData;
@@ -16,6 +17,8 @@ interface Props {
   /** Autosave con debounce (wizard). En configuración usar false. */
   autosave?: boolean;
   onCancel?: () => void;
+  /** Registra validación+guardado al pulsar Siguiente en el wizard. */
+  registerStepSubmit?: (fn: SetupStepSubmit) => () => void;
 }
 
 export function GeneralInfoStepForm({
@@ -25,6 +28,7 @@ export function GeneralInfoStepForm({
   readOnly = false,
   autosave = true,
   onCancel,
+  registerStepSubmit,
 }: Props) {
   const onSaveRef = useRef(onSave);
   useEffect(() => {
@@ -38,6 +42,8 @@ export function GeneralInfoStepForm({
     formState: { errors },
   } = useForm<GeneralInfoFormValues>({
     resolver: zodResolver(generalInfoSchema),
+    mode: 'onBlur',
+    reValidateMode: 'onChange',
     defaultValues: {
       commercialName: initialData?.commercialName ?? '',
       legalName: initialData?.legalName ?? '',
@@ -48,12 +54,24 @@ export function GeneralInfoStepForm({
       country: initialData?.country ?? '',
       phone: initialData?.phone ?? '',
       email: initialData?.email ?? '',
-      timezone: initialData?.timezone || 'America/Bogota',
-      currency: initialData?.currency || 'COP',
-      dateFormat: initialData?.dateFormat || 'DD/MM/YYYY',
+      timezone: pickAllowed(initialData?.timezone, TIMEZONES, 'America/Bogota'),
+      currency: pickAllowed(initialData?.currency, CURRENCIES, 'COP'),
+      dateFormat: pickAllowed(initialData?.dateFormat, DATE_FORMATS, 'DD/MM/YYYY'),
       timeFormat: (initialData?.timeFormat as '12h' | '24h') || '24h',
     },
   });
+
+  useEffect(() => {
+    if (!registerStepSubmit) return;
+    return registerStepSubmit(async () => {
+      let ok = false;
+      await handleSubmit(async (data) => {
+        await onSaveRef.current(data);
+        ok = true;
+      })();
+      return ok;
+    });
+  }, [registerStepSubmit, handleSubmit]);
 
   useEffect(() => {
     if (!autosave || readOnly) return;
@@ -141,9 +159,7 @@ export function GeneralInfoStepForm({
             </SelectInput>
           </FormField>
         </div>
-        <p className="text-sm text-gray-500">
-          Logo: estructura preparada — la carga de archivos se implementará en una fase posterior.
-        </p>
+       
       </fieldset>
 
       {!autosave && !readOnly && onCancel && (

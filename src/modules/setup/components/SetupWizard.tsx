@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { isAxiosError } from 'axios';
 import { Link, useSearchParams } from 'react-router-dom';
 import type {
@@ -10,6 +10,7 @@ import type {
 } from '@/api/setup';
 import { SETUP_STEPS } from '../constants';
 import type { GeneralInfoFormValues, OperationalFormValues } from '../schemas/setup.schemas';
+import type { SetupStepSubmit } from '../types';
 import { useSaveSetupStep, useSetupProgress, useSetupStepData } from '../hooks/useSetup';
 import { SetupProgressBar } from './SetupProgressBar';
 import { GeneralInfoStepForm } from './steps/GeneralInfoStepForm';
@@ -29,6 +30,8 @@ export function SetupWizard() {
       : 'general_info';
   const [currentStep, setCurrentStep] = useState<SetupStepKey>(initialStep);
   const [error, setError] = useState<string | null>(null);
+  const [advancing, setAdvancing] = useState(false);
+  const stepSubmitRef = useRef<SetupStepSubmit | null>(null);
 
   const activeStep = progress?.currentStep ?? currentStep;
 
@@ -43,12 +46,20 @@ export function SetupWizard() {
     }
   }, [stepParam]);
 
-  // Si el progreso antiguo quedó en el paso de caja (eliminado), saltar al resumen.
   useEffect(() => {
     if (currentStep === 'cash_point') {
       setCurrentStep('summary');
     }
   }, [currentStep]);
+
+  const registerStepSubmit = useCallback((fn: SetupStepSubmit) => {
+    stepSubmitRef.current = fn;
+    return () => {
+      if (stepSubmitRef.current === fn) {
+        stepSubmitRef.current = null;
+      }
+    };
+  }, []);
 
   const saveGeneral = useSaveSetupStep<GeneralInfoData>('general_info');
   const saveOperational = useSaveSetupStep<OperationalData>('operational');
@@ -74,9 +85,24 @@ export function SetupWizard() {
     categories: { _id: string; name: string }[];
   }>('rates', currentStep === 'rates');
 
-  const goNext = () => {
-    const next = SETUP_STEPS[stepIndex + 1];
-    if (next) setCurrentStep(next.key);
+  const goNext = async () => {
+    setError(null);
+    setAdvancing(true);
+    try {
+      if (stepSubmitRef.current) {
+        const ok = await stepSubmitRef.current();
+        if (!ok) {
+          setError('Complete y corrija los campos del paso actual antes de continuar.');
+          return;
+        }
+      }
+      const next = SETUP_STEPS[stepIndex + 1];
+      if (next) setCurrentStep(next.key);
+    } catch {
+      setError('Complete y corrija los campos del paso actual antes de continuar.');
+    } finally {
+      setAdvancing(false);
+    }
   };
 
   const goBack = () => {
@@ -137,7 +163,11 @@ export function SetupWizard() {
       setError(null);
       try {
         const response = await saveRates.mutateAsync({ rates });
-        return response.data.data.rates;
+        const savedRates = response.data?.data?.rates;
+        if (!Array.isArray(savedRates)) {
+          throw new Error('Respuesta de tarifas inválida');
+        }
+        return savedRates;
       } catch (err) {
         handleSaveError(err);
         throw err;
@@ -153,13 +183,13 @@ export function SetupWizard() {
     saveRates.isPending;
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="mx-auto max-w-4xl">
       <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
             {isReopen ? 'Configuración del parqueadero' : 'Configuración inicial'}
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className="mt-1 text-gray-600">
             {isReopen
               ? 'Puede actualizar categorías, tarifas y datos operativos en cualquier momento.'
               : 'Complete los pasos para habilitar su parqueadero.'}
@@ -184,6 +214,7 @@ export function SetupWizard() {
           initialData={generalQuery.data?.data}
           isSaving={saveGeneral.isPending}
           onSave={onSaveGeneral}
+          registerStepSubmit={registerStepSubmit}
         />
       )}
 
@@ -192,6 +223,7 @@ export function SetupWizard() {
           initialData={operationalQuery.data?.data}
           isSaving={saveOperational.isPending}
           onSave={onSaveOperational}
+          registerStepSubmit={registerStepSubmit}
         />
       )}
 
@@ -200,6 +232,7 @@ export function SetupWizard() {
           initialCategories={categoriesQuery.data?.data.categories ?? []}
           isSaving={saveCategories.isPending}
           onSave={onSaveCategories}
+          registerStepSubmit={registerStepSubmit}
         />
       )}
 
@@ -209,6 +242,7 @@ export function SetupWizard() {
           categories={ratesQuery.data?.data.categories ?? []}
           isSaving={saveRates.isPending}
           onSave={onSaveRates}
+          registerStepSubmit={registerStepSubmit}
         />
       )}
 
@@ -217,31 +251,25 @@ export function SetupWizard() {
       )}
 
       {currentStep !== 'summary' && (
-        <div className="flex justify-between mt-8">
+        <div className="mt-8 flex justify-between">
           <button
             type="button"
             onClick={goBack}
-            disabled={stepIndex === 0}
-            className="px-4 py-2 border rounded-lg text-gray-700 disabled:opacity-40"
+            disabled={stepIndex === 0 || advancing}
+            className="cursor-pointer rounded-lg border px-4 py-2 text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
           >
             Anterior
           </button>
           <button
             type="button"
-            onClick={goNext}
-            className="px-4 py-2 bg-primary-600 text-white rounded-lg"
+            onClick={() => void goNext()}
+            disabled={advancing || isSaving}
+            className="cursor-pointer rounded-lg bg-primary-600 px-4 py-2 text-white transition-colors hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Siguiente
+            {advancing ? 'Validando...' : 'Siguiente'}
           </button>
         </div>
       )}
-
-      <div className="mt-4 flex items-center justify-between gap-4">
-        {isSaving ? <p className="text-sm text-primary-600">Guardando...</p> : <span />}
-        {activeStep && (
-          <p className="text-xs text-gray-400">Último paso guardado en servidor: {activeStep}</p>
-        )}
-      </div>
     </div>
   );
 }

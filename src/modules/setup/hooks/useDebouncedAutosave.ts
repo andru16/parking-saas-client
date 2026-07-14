@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react';
 
 /**
- * Autosave con debounce. Usa ref para onSave y evita re-disparos
- * cuando el padre re-renderiza (p. ej. isPending del mutation).
- * Serializa guardados para no solapar requests (evita carreras delete/create).
+ * Autosave con debounce + trailing save.
+ * Siempre persiste el valor más reciente al ejecutar (no snapshots viejos en cola),
+ * para evitar que un guardado obsoleto borre filas recién agregadas.
  */
 export function useDebouncedAutosave<T>(
   value: T,
@@ -13,9 +13,14 @@ export function useDebouncedAutosave<T>(
   const delayMs = options?.delayMs ?? 2000;
   const enabled = options?.enabled ?? true;
   const onSaveRef = useRef(onSave);
+  const valueRef = useRef(value);
   const isFirstRender = useRef(true);
-  const saveChainRef = useRef<Promise<void>>(Promise.resolve());
   const skipNextRef = useRef(false);
+  const chainRef = useRef<Promise<void>>(Promise.resolve());
+  const dirtyWhileSavingRef = useRef(false);
+  const savingRef = useRef(false);
+
+  valueRef.current = value;
 
   useEffect(() => {
     onSaveRef.current = onSave;
@@ -34,18 +39,33 @@ export function useDebouncedAutosave<T>(
       return;
     }
 
+    if (savingRef.current) {
+      dirtyWhileSavingRef.current = true;
+    }
+
     const timer = setTimeout(() => {
-      const snapshot = value;
-      saveChainRef.current = saveChainRef.current
+      chainRef.current = chainRef.current
         .catch(() => undefined)
-        .then(() => onSaveRef.current(snapshot));
+        .then(async () => {
+          savingRef.current = true;
+          try {
+            let loops = 0;
+            do {
+              dirtyWhileSavingRef.current = false;
+              const latest = valueRef.current;
+              await onSaveRef.current(latest);
+              loops += 1;
+            } while (dirtyWhileSavingRef.current && loops < 6);
+          } finally {
+            savingRef.current = false;
+          }
+        });
     }, delayMs);
 
     return () => clearTimeout(timer);
   }, [value, delayMs, enabled]);
 
   return {
-    /** Marca el próximo cambio de value como sync post-save (no volver a guardar). */
     skipNextSave: () => {
       skipNextRef.current = true;
     },

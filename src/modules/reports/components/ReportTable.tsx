@@ -1,10 +1,11 @@
 import type { ReportColumn } from '@/api/reports';
+import { formatReportCell } from '@/modules/reports/utils/reportValueLabels';
 
 interface ReportTableProps {
   columns: ReportColumn[];
   rows: Record<string, unknown>[];
   isLoading: boolean;
-  isFetching: boolean;
+  isFetching?: boolean;
   pagination?: { page: number; limit: number; totalRecords: number; totalPages: number };
   onPageChange: (page: number) => void;
 }
@@ -13,28 +14,26 @@ export function ReportTable({
   columns,
   rows,
   isLoading,
-  isFetching,
+  isFetching = false,
   pagination,
   onPageChange,
 }: ReportTableProps) {
-  if (isLoading) {
-    return <p className="text-sm text-gray-400 py-8 text-center">Cargando reporte...</p>;
+  if (isLoading && rows.length === 0) {
+    return <p className="py-8 text-center text-sm text-gray-400">Cargando reporte...</p>;
   }
 
   return (
-    <div className="rounded-xl bg-white border border-gray-200 overflow-hidden shadow-sm">
-      {isFetching && (
-        <div className="h-0.5 bg-primary-500 animate-pulse" />
-      )}
+    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+      {isFetching && <div className="h-0.5 animate-pulse bg-primary-500" />}
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className="border-b border-gray-200 bg-gray-50">
             <tr>
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wide"
+                  className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600"
                 >
                   {col.label}
                 </th>
@@ -52,8 +51,8 @@ export function ReportTable({
               rows.map((row, idx) => (
                 <tr key={idx} className="hover:bg-gray-50">
                   {columns.map((col) => (
-                    <td key={col.key} className="px-4 py-2.5 text-gray-800 whitespace-nowrap">
-                      {formatCell(row[col.key])}
+                    <td key={col.key} className="whitespace-nowrap px-4 py-2.5 text-gray-800">
+                      {formatReportCell(col.key, row[col.key])}
                     </td>
                   ))}
                 </tr>
@@ -64,7 +63,7 @@ export function ReportTable({
       </div>
 
       {pagination && pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 text-sm">
+        <div className="flex items-center justify-between border-t border-gray-100 px-4 py-3 text-sm">
           <p className="text-gray-500">
             {pagination.totalRecords} registros — página {pagination.page} de {pagination.totalPages}
           </p>
@@ -73,7 +72,7 @@ export function ReportTable({
               type="button"
               disabled={pagination.page <= 1}
               onClick={() => onPageChange(pagination.page - 1)}
-              className="px-3 py-1 rounded border border-gray-300 disabled:opacity-50"
+              className="rounded border border-gray-300 px-3 py-1 disabled:opacity-50"
             >
               Anterior
             </button>
@@ -81,7 +80,7 @@ export function ReportTable({
               type="button"
               disabled={pagination.page >= pagination.totalPages}
               onClick={() => onPageChange(pagination.page + 1)}
-              className="px-3 py-1 rounded border border-gray-300 disabled:opacity-50"
+              className="rounded border border-gray-300 px-3 py-1 disabled:opacity-50"
             >
               Siguiente
             </button>
@@ -90,17 +89,4 @@ export function ReportTable({
       )}
     </div>
   );
-}
-
-function formatCell(value: unknown): string {
-  if (value == null) return '—';
-  if (typeof value === 'boolean') return value ? 'Sí' : 'No';
-  if (value instanceof Date || (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value))) {
-    return new Date(String(value)).toLocaleString('es-CO', {
-      dateStyle: 'short',
-      timeStyle: 'short',
-    });
-  }
-  if (typeof value === 'number') return value.toLocaleString('es-CO');
-  return String(value);
 }

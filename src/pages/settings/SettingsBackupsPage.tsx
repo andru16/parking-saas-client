@@ -13,6 +13,7 @@ import {
 } from '@/modules/backups/hooks/useBackups';
 import { hasPermission, PERMISSIONS } from '@/modules/auth/permissions';
 import { useAuth } from '@/modules/auth/AuthProvider';
+import { confirmAction } from '@/lib/dialogs';
 
 function formatBytes(n?: number) {
   if (!n) return '—';
@@ -181,9 +182,15 @@ export function SettingsBackupsPage() {
                             type="button"
                             className="text-xs font-medium text-red-600 hover:underline"
                             onClick={() => {
-                              if (window.confirm('¿Eliminar este backup?')) {
-                                void removeBackup.mutateAsync(job._id);
-                              }
+                              void (async () => {
+                                const ok = await confirmAction({
+                                  title: '¿Eliminar este backup?',
+                                  text: 'Esta acción no se puede deshacer.',
+                                  confirmText: 'Eliminar',
+                                  danger: true,
+                                });
+                                if (ok) void removeBackup.mutateAsync(job._id);
+                              })();
                             }}
                           >
                             Eliminar

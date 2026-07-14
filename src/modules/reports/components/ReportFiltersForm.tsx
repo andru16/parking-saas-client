@@ -1,6 +1,10 @@
 import type { ReactNode } from 'react';
 import type { ReportFilters } from '@/api/reports';
 import { useReportFilterOptions } from '@/modules/reports/hooks/useReports';
+import {
+  REPORT_PAYMENT_LABELS,
+  REPORT_STATUS_LABELS,
+} from '@/modules/reports/utils/reportValueLabels';
 
 interface ReportFiltersFormProps {
   filters: ReportFilters;
@@ -8,25 +12,6 @@ interface ReportFiltersFormProps {
   onSubmit: (filters: ReportFilters) => void;
   reportType?: string;
 }
-
-const STATUS_LABELS: Record<string, string> = {
-  open: 'Abierto',
-  closed: 'Cerrado',
-  cancelled: 'Anulado',
-  active: 'Activo',
-  inactive: 'Inactivo',
-  pending_verification: 'Pendiente de verificación',
-};
-
-const PAYMENT_LABELS: Record<string, string> = {
-  cash: 'Efectivo',
-  card: 'Tarjeta',
-  transfer: 'Transferencia',
-  nequi: 'Nequi',
-  daviplata: 'Daviplata',
-  other: 'Otros',
-  membership: 'Membresía',
-};
 
 function emptyFilters(keep?: Partial<ReportFilters>): ReportFilters {
   return { page: 1, limit: 20, ...keep };
@@ -87,7 +72,7 @@ export function ReportFiltersForm({
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 bg-slate-50/80 px-4 py-3">
         <div>
           <h3 className="text-sm font-semibold text-slate-900">Filtros</h3>
-          <p className="text-xs text-slate-500">Ajuste el rango y criterios antes de consultar</p>
+          <p className="text-xs text-slate-500">Ajuste el rango y criterios antes de generar el reporte</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
@@ -99,9 +84,9 @@ export function ReportFiltersForm({
           </button>
           <button
             type="submit"
-            className="rounded-lg bg-slate-900 px-4 py-1.5 text-xs font-medium text-white hover:bg-slate-800"
+            className="rounded-lg bg-teal-700 px-4 py-1.5 text-xs font-medium text-white hover:bg-teal-800"
           >
-            Consultar
+            Generar reporte
           </button>
         </div>
       </div>
@@ -155,7 +140,7 @@ export function ReportFiltersForm({
               <option value="">Todos</option>
               {statusOptions?.map((s) => (
                 <option key={s} value={s}>
-                  {STATUS_LABELS[s] ?? s}
+                  {REPORT_STATUS_LABELS[s] ?? s}
                 </option>
               ))}
             </select>
@@ -206,7 +191,7 @@ export function ReportFiltersForm({
               <option value="">Todos</option>
               {options?.paymentMethods.map((m) => (
                 <option key={m} value={m}>
-                  {PAYMENT_LABELS[m] ?? m}
+                  {REPORT_PAYMENT_LABELS[m] ?? m}
                 </option>
               ))}
             </select>

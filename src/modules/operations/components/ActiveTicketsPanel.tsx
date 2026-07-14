@@ -72,7 +72,6 @@ export function ActiveTicketsPanel({
             <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-900">
               Vehículos dentro
             </h2>
-            <p className="text-xs text-gray-500">Tickets abiertos · actualización automática</p>
           </div>
           <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-primary-100 px-2 text-sm font-bold text-primary-800">
             {tickets.length}

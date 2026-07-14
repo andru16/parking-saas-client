@@ -21,7 +21,7 @@ export function useAllowedReports() {
     queryKey: reportKeys.allowed(),
     queryFn: async () => {
       const res = await getAllowedReports();
-      return res.data;
+      return (res.data?.reports ?? []) as ReportType[];
     },
   });
 }

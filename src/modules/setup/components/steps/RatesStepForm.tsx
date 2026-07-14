@@ -1,8 +1,10 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { RateItem } from '@/api/setup';
 import { SettingsFormActions } from '@/modules/settings/components/SettingsSectionShell';
 import { BILLING_MODES } from '../../constants';
 import { useDebouncedAutosave } from '../../hooks/useDebouncedAutosave';
+import type { SetupStepSubmit } from '../../types';
+import { confirmAction } from '@/lib/dialogs';
 
 interface CategoryOption {
   _id: string;
@@ -19,6 +21,7 @@ interface Props {
   onCancel?: () => void;
   /** Campos avanzados del motor de tarifas (settings). */
   advanced?: boolean;
+  registerStepSubmit?: (fn: SetupStepSubmit) => () => void;
 }
 
 const CONTEXT_TYPES = [
@@ -33,10 +36,17 @@ function buildRateName(categoryName: string, billingMode: string): string {
   return `${categoryName} — ${modeLabel}`;
 }
 
-function normalizeRate(rate: RateItem): RateItem {
+type LocalRate = RateItem & { clientKey: string };
+
+function createClientKey() {
+  return `rate-${crypto.randomUUID()}`;
+}
+
+function normalizeRate(rate: RateItem & { clientKey?: string }): LocalRate {
   return {
     ...rate,
     id: rate.id ? String(rate.id) : undefined,
+    clientKey: rate.clientKey || (rate.id ? String(rate.id) : createClientKey()),
     vehicleCategoryId: rate.vehicleCategoryId ? String(rate.vehicleCategoryId) : '',
     value: Number(rate.value) || 0,
     baseTimeMinutes: Number(rate.baseTimeMinutes) || 0,
@@ -48,8 +58,42 @@ function normalizeRate(rate: RateItem): RateItem {
   };
 }
 
-function emptyRate(category: CategoryOption): RateItem {
+const fieldClass =
+  'w-full rounded-lg border border-gray-300 bg-white px-3 py-2 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-600';
+
+/** Une la respuesta del servidor con el estado local sin borrar filas nuevas. */
+function mergeSavedIntoLocal(local: LocalRate[], saved: RateItem[]): LocalRate[] {
+  const pool = [...saved];
+
+  const takeMatch = (row: LocalRate): RateItem | undefined => {
+    if (row.id) {
+      const idx = pool.findIndex((s) => String(s.id) === String(row.id));
+      if (idx >= 0) return pool.splice(idx, 1)[0];
+    }
+    const idx = pool.findIndex(
+      (s) =>
+        String(s.vehicleCategoryId) === String(row.vehicleCategoryId) &&
+        s.billingMode === row.billingMode &&
+        (s.contextType || 'normal') === (row.contextType || 'normal'),
+    );
+    if (idx >= 0) return pool.splice(idx, 1)[0];
+    return undefined;
+  };
+
+  return local.map((row) => {
+    const match = takeMatch(row);
+    if (!match) return row;
+    return normalizeRate({
+      ...match,
+      value: row.value,
+      clientKey: row.clientKey,
+    });
+  });
+}
+
+function emptyRate(category: CategoryOption): LocalRate {
   return {
+    clientKey: createClientKey(),
     name: buildRateName(category.name, 'fixed'),
     vehicleCategoryId: String(category._id),
     contextType: 'normal',
@@ -61,12 +105,17 @@ function emptyRate(category: CategoryOption): RateItem {
   };
 }
 
+function pickCategoryForNewRate(
+  categories: CategoryOption[],
+  rates: RateItem[],
+): CategoryOption | undefined {
+  const used = new Set(rates.map((r) => String(r.vehicleCategoryId)).filter(Boolean));
+  return categories.find((c) => !used.has(String(c._id))) ?? categories[0];
+}
+
 function modeMeta(billingMode: string) {
   return BILLING_MODES.find((m) => m.value === billingMode);
 }
-
-const fieldClass =
-  'w-full rounded-lg border border-gray-300 bg-white px-3 py-2 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-600';
 
 export function RatesStepForm({
   initialRates,
@@ -77,9 +126,16 @@ export function RatesStepForm({
   autosave = true,
   onCancel,
   advanced = false,
+  registerStepSubmit,
 }: Props) {
-  const [rates, setRates] = useState<RateItem[]>(() => initialRates.map(normalizeRate));
+  const [rates, setRates] = useState<LocalRate[]>(() =>
+    initialRates.map((r) => normalizeRate(r)),
+  );
+  const [localError, setLocalError] = useState<string | null>(null);
   const skipNextSaveRef = useRef(() => {});
+  const ratesRef = useRef(rates);
+  const persistGenRef = useRef(0);
+  ratesRef.current = rates;
 
   const categoryById = useMemo(
     () => new Map(categories.map((c) => [String(c._id), { ...c, _id: String(c._id) }])),
@@ -87,11 +143,17 @@ export function RatesStepForm({
   );
 
   const persist = useCallback(
-    async (current: RateItem[]) => {
-      const saved = await onSave(current);
+    async (current: LocalRate[]) => {
+      const gen = ++persistGenRef.current;
+      const payload = current.map(({ clientKey: _clientKey, ...rate }) => rate);
+      const saved = await onSave(payload);
+
+      // Un resultado obsoleto no debe pisar el UI ni acortar la lista.
+      if (gen !== persistGenRef.current) return;
+
       if (saved?.length) {
         skipNextSaveRef.current();
-        setRates(saved.map(normalizeRate));
+        setRates(mergeSavedIntoLocal(ratesRef.current, saved));
       }
     },
     [onSave],
@@ -99,8 +161,40 @@ export function RatesStepForm({
 
   const { skipNextSave } = useDebouncedAutosave(rates, persist, {
     enabled: autosave && !readOnly && rates.length > 0,
+    delayMs: 1200,
   });
   skipNextSaveRef.current = skipNextSave;
+
+  useEffect(() => {
+    if (!registerStepSubmit) return;
+    return registerStepSubmit(async () => {
+      setLocalError(null);
+      if (rates.length === 0) {
+        setLocalError('Configure al menos una tarifa');
+        return false;
+      }
+      if (rates.some((r) => !r.vehicleCategoryId)) {
+        setLocalError('Cada tarifa debe tener una categoría de vehículo');
+        return false;
+      }
+      if (!advanced) {
+        const activeCategories = rates
+          .filter((r) => r.status !== 'inactive')
+          .map((r) => String(r.vehicleCategoryId))
+          .filter(Boolean);
+        if (new Set(activeCategories).size !== activeCategories.length) {
+          setLocalError('Cada categoría de vehículo solo puede tener una tarifa activa');
+          return false;
+        }
+      }
+      if (rates.some((r) => r.status !== 'inactive' && !(Number(r.value) > 0))) {
+        setLocalError('El valor de cada tarifa activa debe ser mayor a 0');
+        return false;
+      }
+      await persist(rates);
+      return true;
+    });
+  }, [registerStepSubmit, rates, persist, advanced]);
 
   const updateRate = (index: number, patch: Partial<RateItem>) => {
     if (readOnly) return;
@@ -123,16 +217,20 @@ export function RatesStepForm({
 
   const removeRate = (index: number) => {
     if (readOnly) return;
-    if (!confirm('¿Eliminar esta tarifa?')) return;
-    setRates((prev) => prev.filter((_, i) => i !== index));
+    void (async () => {
+      const ok = await confirmAction({
+        title: '¿Eliminar esta tarifa?',
+        confirmText: 'Eliminar',
+        danger: true,
+      });
+      if (!ok) return;
+      setRates((prev) => prev.filter((_, i) => i !== index));
+    })();
   };
 
   const handleManualSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    const saved = await onSave(rates);
-    if (saved?.length) {
-      setRates(saved.map(normalizeRate));
-    }
+    await persist(rates);
   };
 
   return (
@@ -142,10 +240,12 @@ export function RatesStepForm({
         solo valor por estadía), por hora, por fracción u otras modalidades.
       </p>
 
+      {localError && <p className="text-sm text-red-600">{localError}</p>}
+
       {rates.map((rate, index) => {
         const meta = modeMeta(rate.billingMode);
         return (
-        <div key={rate.id ?? `new-${index}`} className="space-y-3 rounded-lg border p-4">
+        <div key={rate.clientKey} className="space-y-3 rounded-lg border p-4">
           <div className="flex items-center justify-between">
             <h3 className="font-medium">Tarifa {index + 1}</h3>
             {!readOnly && (
@@ -389,11 +489,11 @@ export function RatesStepForm({
           type="button"
           disabled={categories.length === 0}
           onClick={() => {
-            const firstCategory = categories[0];
-            if (firstCategory) {
+            const category = pickCategoryForNewRate(categories, rates);
+            if (category) {
               setRates((prev) => [
                 ...prev,
-                emptyRate({ _id: String(firstCategory._id), name: firstCategory.name }),
+                emptyRate({ _id: String(category._id), name: category.name }),
               ]);
             }
           }}

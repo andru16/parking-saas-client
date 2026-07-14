@@ -1,13 +1,15 @@
 import { Suspense, lazy, type ComponentType, type ReactNode } from 'react';
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
-import { MainLayout } from '@/layouts/MainLayout';
 import { AppLayout } from '@/layouts/AppLayout';
 import { AuthLayout } from '@/layouts/AuthLayout';
+import { SetupLayout } from '@/layouts/SetupLayout';
 import { HomePage } from '@/pages/HomePage';
 import { LoginPage } from '@/pages/LoginPage';
 import { SessionExpiredPage } from '@/pages/SessionExpiredPage';
 import { AccessDeniedPage } from '@/pages/AccessDeniedPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
+import { PrivacyPage, TermsPage } from '@/pages/LegalPages';
+import { WelcomePage } from '@/pages/WelcomePage';
 import { PERMISSIONS } from '@/modules/auth/permissions';
 import { ProtectedRoute } from '@/routes/ProtectedRoute';
 import { GuestRoute } from '@/routes/GuestRoute';
@@ -75,11 +77,6 @@ const SettingsPrintingPage = lazyPage(
   () => import('@/pages/settings').then((m) => ({ SettingsPrintingPage: m.SettingsPrintingPage })),
   'SettingsPrintingPage',
 );
-const SettingsMembershipsPage = lazyPage(
-  () =>
-    import('@/pages/settings').then((m) => ({ SettingsMembershipsPage: m.SettingsMembershipsPage })),
-  'SettingsMembershipsPage',
-);
 const SettingsUsersPage = lazyPage(
   () => import('@/pages/settings').then((m) => ({ SettingsUsersPage: m.SettingsUsersPage })),
   'SettingsUsersPage',
@@ -87,20 +84,6 @@ const SettingsUsersPage = lazyPage(
 const SettingsRolesPage = lazyPage(
   () => import('@/pages/settings/SettingsRolesPage'),
   'SettingsRolesPage',
-);
-const SettingsIntegrationsPage = lazyPage(
-  () =>
-    import('@/pages/settings').then((m) => ({
-      SettingsIntegrationsPage: m.SettingsIntegrationsPage,
-    })),
-  'SettingsIntegrationsPage',
-);
-const SettingsBackupsPage = lazyPage(
-  () =>
-    import('@/pages/settings').then((m) => ({
-      SettingsBackupsPage: m.SettingsBackupsPage,
-    })),
-  'SettingsBackupsPage',
 );
 
 const SuperAdminLoginPage = lazyPage(
@@ -318,11 +301,15 @@ export const router = createBrowserRouter([
 
   {
     path: '/',
-    element: (
-      <MainLayout>
-        <HomePage />
-      </MainLayout>
-    ),
+    element: <HomePage />,
+  },
+  {
+    path: '/privacidad',
+    element: <PrivacyPage />,
+  },
+  {
+    path: '/terminos',
+    element: <TermsPage />,
   },
   { path: '/login', element: <LoginPage /> },
   {
@@ -357,7 +344,7 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <SetupRoute>
-          <AppLayout />
+          <SetupLayout />
         </SetupRoute>
       </ProtectedRoute>
     ),
@@ -371,6 +358,15 @@ export const router = createBrowserRouter([
         ),
       },
     ],
+  },
+
+  {
+    path: '/bienvenida',
+    element: (
+      <ProtectedRoute>
+        <WelcomePage />
+      </ProtectedRoute>
+    ),
   },
 
   {
@@ -587,16 +583,6 @@ export const router = createBrowserRouter([
             ),
           },
           {
-            path: 'memberships',
-            element: (
-              <RoleGuard permissions={PERMISSIONS.SETTINGS_MANAGE}>
-                <SuspensePage>
-                  <SettingsMembershipsPage />
-                </SuspensePage>
-              </RoleGuard>
-            ),
-          },
-          {
             path: 'users',
             element: (
               <RoleGuard permissions={PERMISSIONS.USERS_MANAGE}>
@@ -617,26 +603,16 @@ export const router = createBrowserRouter([
             ),
           },
           {
+            path: 'memberships',
+            element: <Navigate to="/settings/general" replace />,
+          },
+          {
             path: 'integrations',
-            element: (
-              <RoleGuard permissions={PERMISSIONS.SETTINGS_MANAGE}>
-                <SuspensePage>
-                  <SettingsIntegrationsPage />
-                </SuspensePage>
-              </RoleGuard>
-            ),
+            element: <Navigate to="/settings/general" replace />,
           },
           {
             path: 'backups',
-            element: (
-              <RoleGuard
-                permissions={[PERMISSIONS.BACKUPS_VIEW, PERMISSIONS.BACKUPS_MANAGE]}
-              >
-                <SuspensePage>
-                  <SettingsBackupsPage />
-                </SuspensePage>
-              </RoleGuard>
-            ),
+            element: <Navigate to="/settings/general" replace />,
           },
         ],
       },

@@ -9,6 +9,8 @@ import type {
 } from '@/api/setup';
 import { BILLING_MODES } from '../../constants';
 import { useCompleteSetup, useSetupSummary } from '../../hooks/useSetup';
+import { confirmAction } from '@/lib/dialogs';
+import { markSetupWelcomePending } from '@/modules/setup/setupWelcome';
 
 function SectionCard({
   title,
@@ -26,7 +28,7 @@ function SectionCard({
         <button
           type="button"
           onClick={onEdit}
-          className="text-sm font-medium text-primary-600 hover:underline"
+          className="cursor-pointer text-sm font-medium text-primary-600 hover:underline"
         >
           Editar
         </button>
@@ -212,12 +214,18 @@ export function SummaryStep({ onGoToStep }: { onGoToStep: (stepKey: string) => v
       return;
     }
 
-    if (!confirm('¿Confirmar y finalizar la configuración inicial?')) return;
+    const ok = await confirmAction({
+      title: '¿Finalizar configuración inicial?',
+      text: 'Confirme para activar su parqueadero con la información ingresada.',
+      confirmText: 'Finalizar',
+    });
+    if (!ok) return;
 
     try {
       await completeMutation.mutateAsync();
       await refreshUser();
-      navigate('/dashboard', { replace: true });
+      markSetupWelcomePending();
+      navigate('/bienvenida', { replace: true });
     } catch {
       // El error se muestra abajo
     }
@@ -278,7 +286,7 @@ export function SummaryStep({ onGoToStep }: { onGoToStep: (stepKey: string) => v
         type="button"
         onClick={() => void handleComplete()}
         disabled={completeMutation.isPending}
-        className="w-full rounded-lg bg-primary-600 py-3 font-medium text-white hover:bg-primary-700 disabled:opacity-50"
+        className="w-full cursor-pointer rounded-lg bg-primary-600 py-3 font-medium text-white transition-colors hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {completeMutation.isPending
           ? 'Finalizando...'

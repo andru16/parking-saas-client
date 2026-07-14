@@ -75,6 +75,10 @@ export interface PrintingConfig {
   copies: number;
   enableQr: boolean;
   enableBarcode: boolean;
+  /** Imprimir ticket al registrar ingreso. */
+  generateEntryTicket?: boolean;
+  /** Imprimir ticket de salida al cobrar (desactivar si solo usan el de ingreso). */
+  generateExitTicket?: boolean;
   preferredAdapter?: 'browser' | 'escpos' | 'pdf' | 'text' | 'bluetooth' | 'lan' | 'usb';
   customMessages: {
     entry: string;

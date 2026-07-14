@@ -1,0 +1,65 @@
+/* Animaciones ligeras de la landing (sin librerías) */
+
+.landing-reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.65s ease,
+    transform 0.65s ease;
+}
+
+.landing-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-reveal,
+  .landing-reveal.is-visible,
+  .landing-float,
+  .landing-float-slow,
+  .landing-hero-copy,
+  .landing-hero-visual {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+.landing-hero-copy {
+  animation: landing-fade-up 0.7s ease both;
+}
+
+.landing-hero-visual {
+  animation: landing-fade-up 0.85s ease 0.12s both;
+}
+
+.landing-float {
+  animation: landing-float 6s ease-in-out infinite;
+}
+
+.landing-float-slow {
+  animation: landing-float 8s ease-in-out infinite;
+}
+
+@keyframes landing-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes landing-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}

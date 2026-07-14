@@ -5,6 +5,7 @@ import {
   useSaveSettingsSection,
   useSettingsSectionData,
 } from '@/modules/settings/hooks/useSettingsSection';
+import { EMAIL_MESSAGE, isValidEmail, isValidPhone, PHONE_MESSAGE } from '@/lib/validation/contactFields';
 
 const LABELS: Record<keyof IntegrationsConfig, string> = {
   whatsapp: 'WhatsApp',
@@ -72,12 +73,24 @@ function IntegrationsForm({
       api: { enabled: false, webhookUrl: null },
     },
   );
+  const [error, setError] = useState<string | null>(null);
 
   return (
     <form
       className="space-y-4"
       onSubmit={async (e) => {
         e.preventDefault();
+        setError(null);
+        const phone = integrations.whatsapp.phoneNumber?.trim() ?? '';
+        if (phone && !isValidPhone(phone)) {
+          setError(PHONE_MESSAGE);
+          return;
+        }
+        const fromAddress = integrations.email.fromAddress?.trim() ?? '';
+        if (fromAddress && !isValidEmail(fromAddress)) {
+          setError(EMAIL_MESSAGE);
+          return;
+        }
         await onSave(integrations);
       }}
     >
@@ -136,6 +149,8 @@ function IntegrationsForm({
           </div>
         );
       })}
+
+      {error && <p className="text-sm text-red-600">{error}</p>}
 
       {!readOnly && <SettingsFormActions isSaving={isSaving} onCancel={onCancel} />}
     </form>

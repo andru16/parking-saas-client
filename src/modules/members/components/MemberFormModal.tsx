@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Member, MemberPayload } from '@/api/members';
 import { useCreateMember, useUpdateMember } from '@/modules/members/hooks/useMembers';
+import { validatePersonContactFields } from '@/lib/validation/contactFields';
 
 const DOCUMENT_TYPES = [
   { value: 'CC', label: 'Cédula de ciudadanía' },
@@ -50,6 +51,15 @@ export function MemberFormModal({
         onSubmit={async (e) => {
           e.preventDefault();
           setError(null);
+          const validationError = validatePersonContactFields({
+            name,
+            email,
+            phone,
+          });
+          if (validationError) {
+            setError(validationError);
+            return;
+          }
           try {
             if (isEdit && member) {
               await update.mutateAsync({ id: member._id, payload: buildPayload() });

@@ -6,11 +6,15 @@ import { isAxiosError } from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useSuperAdminAuth } from '@/modules/superAdmin/SuperAdminAuthProvider';
 import { SuperAdminGuestRoute } from '@/modules/superAdmin/SuperAdminGuards';
+import { emailSchema } from '@/lib/validation/contactFields';
+import { HoneypotFields, useFormStartedAt } from '@/lib/validation/HoneypotFields';
 
 const schema = z.object({
-  email: z.string().email('Correo inválido'),
+  email: emailSchema,
   password: z.string().min(1, 'Contraseña obligatoria'),
   rememberMe: z.boolean(),
+  website: z.string().max(0).optional().or(z.literal('')),
+  formStartedAt: z.number().int().positive(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -19,6 +23,7 @@ function LoginForm() {
   const { login } = useSuperAdminAuth();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
+  const formStartedAt = useFormStartedAt();
 
   const {
     register,
@@ -26,13 +31,22 @@ function LoginForm() {
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { email: '', password: '', rememberMe: false },
+    defaultValues: {
+      email: '',
+      password: '',
+      rememberMe: false,
+      website: '',
+      formStartedAt,
+    },
   });
 
   const onSubmit = handleSubmit(async (values) => {
     setError(null);
     try {
-      await login(values.email, values.password, values.rememberMe);
+      await login(values.email, values.password, values.rememberMe, {
+        website: values.website || '',
+        formStartedAt: values.formStartedAt,
+      });
       navigate('/admin', { replace: true });
     } catch (err) {
       if (isAxiosError(err)) {
@@ -54,7 +68,10 @@ function LoginForm() {
           Acceso exclusivo al backoffice de la plataforma. No es el login del parqueadero.
         </p>
 
-        <form onSubmit={onSubmit} className="mt-8 space-y-4">
+        <form onSubmit={onSubmit} className="relative mt-8 space-y-4">
+          <HoneypotFields websiteRegister={register('website')} />
+          <input type="hidden" {...register('formStartedAt', { valueAsNumber: true })} />
+
           {error && (
             <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
               {error}

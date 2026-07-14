@@ -198,10 +198,19 @@ export type PlanUpsertPayload = {
   icon?: PlatformPlan['icon'];
 };
 
-export async function adminLogin(email: string, password: string) {
+export async function adminLogin(
+  email: string,
+  password: string,
+  botGuard?: { website?: string; formStartedAt: number },
+) {
   const { data } = await adminApi.post<
     ApiResponse<{ accessToken: string; expiresIn: string; user: SuperAdminUser }>
-  >('/admin/auth/login', { email, password });
+  >('/admin/auth/login', {
+    email,
+    password,
+    website: botGuard?.website ?? '',
+    formStartedAt: botGuard?.formStartedAt ?? Date.now(),
+  });
   return data;
 }
 

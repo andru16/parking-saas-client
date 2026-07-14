@@ -20,7 +20,12 @@ interface SuperAdminAuthContextValue {
   user: SuperAdminUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string, remember?: boolean) => Promise<SuperAdminUser>;
+  login: (
+    email: string,
+    password: string,
+    remember?: boolean,
+    botGuard?: { website?: string; formStartedAt: number },
+  ) => Promise<SuperAdminUser>;
   logout: () => Promise<void>;
 }
 
@@ -65,12 +70,20 @@ export function SuperAdminAuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const login = useCallback(async (email: string, password: string, remember = false) => {
-    const response = await adminLogin(email, password);
-    adminTokenStorage.set(response.data.accessToken, remember);
-    setUser(response.data.user);
-    return response.data.user;
-  }, []);
+  const login = useCallback(
+    async (
+      email: string,
+      password: string,
+      remember = false,
+      botGuard?: { website?: string; formStartedAt: number },
+    ) => {
+      const response = await adminLogin(email, password, botGuard);
+      adminTokenStorage.set(response.data.accessToken, remember);
+      setUser(response.data.user);
+      return response.data.user;
+    },
+    [],
+  );
 
   const logout = useCallback(async () => {
     try {

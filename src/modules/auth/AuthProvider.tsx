@@ -17,7 +17,12 @@ interface AuthContextValue {
   isLoading: boolean;
   isAuthenticated: boolean;
   sessionExpired: boolean;
-  login: (email: string, password: string, rememberMe?: boolean) => Promise<AuthUser>;
+  login: (
+    email: string,
+    password: string,
+    rememberMe?: boolean,
+    botGuard?: { website?: string; formStartedAt: number },
+  ) => Promise<AuthUser>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   clearSessionExpired: () => void;
@@ -89,14 +94,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const login = useCallback(async (email: string, password: string, rememberMe = false) => {
-    tokenStorage.setRememberMe(rememberMe);
-    const response = await loginRequest({ email, password });
-    tokenStorage.set(response.data.accessToken);
-    setSessionExpired(false);
-    setUser(response.data.user);
-    return response.data.user;
-  }, []);
+  const login = useCallback(
+    async (
+      email: string,
+      password: string,
+      rememberMe = false,
+      botGuard?: { website?: string; formStartedAt: number },
+    ) => {
+      tokenStorage.setRememberMe(rememberMe);
+      const response = await loginRequest({
+        email,
+        password,
+        website: botGuard?.website ?? '',
+        formStartedAt: botGuard?.formStartedAt ?? Date.now(),
+      });
+      tokenStorage.set(response.data.accessToken);
+      setSessionExpired(false);
+      setUser(response.data.user);
+      return response.data.user;
+    },
+    [],
+  );
 
   const logout = useCallback(async () => {
     try {

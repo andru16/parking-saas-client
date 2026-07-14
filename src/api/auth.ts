@@ -57,6 +57,9 @@ export interface AuthUser {
 export interface LoginPayload {
   email: string;
   password: string;
+  /** Honeypot anti-bot — debe ir vacío. */
+  website?: string;
+  formStartedAt: number;
 }
 
 export interface LoginResult {

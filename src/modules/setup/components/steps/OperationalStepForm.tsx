@@ -5,6 +5,7 @@ import type { OperationalData } from '@/api/setup';
 import { SettingsFormActions } from '@/modules/settings/components/SettingsSectionShell';
 import { operationalSchema, type OperationalFormValues } from '../../schemas/setup.schemas';
 import { CheckboxInput, FormField, TextInput } from '../FormField';
+import type { SetupStepSubmit } from '../../types';
 
 interface Props {
   initialData?: OperationalData;
@@ -13,6 +14,7 @@ interface Props {
   readOnly?: boolean;
   autosave?: boolean;
   onCancel?: () => void;
+  registerStepSubmit?: (fn: SetupStepSubmit) => () => void;
 }
 
 export function OperationalStepForm({
@@ -22,6 +24,7 @@ export function OperationalStepForm({
   readOnly = false,
   autosave = true,
   onCancel,
+  registerStepSubmit,
 }: Props) {
   const onSaveRef = useRef(onSave);
   useEffect(() => {
@@ -35,6 +38,8 @@ export function OperationalStepForm({
     formState: { errors },
   } = useForm<OperationalFormValues>({
     resolver: zodResolver(operationalSchema),
+    mode: 'onBlur',
+    reValidateMode: 'onChange',
     defaultValues: {
       operate24Hours: initialData?.operate24Hours ?? false,
       openTime: initialData?.openTime || '',
@@ -46,6 +51,18 @@ export function OperationalStepForm({
   });
 
   const operate24Hours = watch('operate24Hours');
+
+  useEffect(() => {
+    if (!registerStepSubmit) return;
+    return registerStepSubmit(async () => {
+      let ok = false;
+      await handleSubmit(async (data) => {
+        await onSaveRef.current(data);
+        ok = true;
+      })();
+      return ok;
+    });
+  }, [registerStepSubmit, handleSubmit]);
 
   useEffect(() => {
     if (!autosave || readOnly) return;
@@ -104,7 +121,13 @@ export function OperationalStepForm({
             <TextInput
               type="number"
               min={1}
-              {...register('maxCapacity', { valueAsNumber: true })}
+              {...register('maxCapacity', {
+                setValueAs: (v) => {
+                  if (v === '' || v === null || v === undefined) return null;
+                  const n = Number(v);
+                  return Number.isFinite(n) ? n : null;
+                },
+              })}
             />
           </FormField>
         </div>

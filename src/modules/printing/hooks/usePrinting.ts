@@ -3,6 +3,7 @@ import {
   getCashPrintDocument,
   getMembershipPrintDocument,
   getPaymentPrintDocument,
+  getPrintConfig,
   getPrintPreview,
   getTicketPrintDocument,
   listPrintJobs,
@@ -15,6 +16,7 @@ import { printHtmlContent } from '@/modules/printing/printBrowser';
 
 export const printingKeys = {
   all: ['printing'] as const,
+  config: () => [...printingKeys.all, 'config'] as const,
   preview: (type: string, draftKey: string) =>
     [...printingKeys.all, 'preview', type, draftKey] as const,
   jobs: (page: number) => [...printingKeys.all, 'jobs', page] as const,
@@ -28,6 +30,18 @@ function maybePrintHtml(data: {
   if (data.format === 'html' && typeof data.content === 'string') {
     printHtmlContent(data.content, data.document.meta.copies);
   }
+}
+
+/** Config de impresión de la organización (flags de tickets, etc.). */
+export function usePrintConfig() {
+  return useQuery({
+    queryKey: printingKeys.config(),
+    queryFn: async () => {
+      const res = await getPrintConfig();
+      return res.data.config;
+    },
+    staleTime: 60_000,
+  });
 }
 
 export function usePrintPreview(

@@ -14,7 +14,43 @@
 }
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     @apply bg-slate-100 text-slate-900 antialiased;
+  }
+
+  /* Manito + hover en todos los botones del sistema */
+  button:not(:disabled),
+  input[type='button']:not(:disabled),
+  input[type='submit']:not(:disabled),
+  input[type='reset']:not(:disabled),
+  [role='button']:not([aria-disabled='true']) {
+    cursor: pointer;
+    transition:
+      color 150ms ease,
+      background-color 150ms ease,
+      border-color 150ms ease,
+      background-image 150ms ease,
+      opacity 150ms ease,
+      box-shadow 150ms ease;
+  }
+
+  button:not(:disabled):hover,
+  input[type='button']:not(:disabled):hover,
+  input[type='submit']:not(:disabled):hover,
+  input[type='reset']:not(:disabled):hover,
+  [role='button']:not([aria-disabled='true']):hover {
+    background-image: linear-gradient(rgb(0 0 0 / 0.07), rgb(0 0 0 / 0.07));
+  }
+
+  button:disabled,
+  input[type='button']:disabled,
+  input[type='submit']:disabled,
+  input[type='reset']:disabled,
+  [role='button'][aria-disabled='true'] {
+    cursor: not-allowed;
   }
 }

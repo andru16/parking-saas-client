@@ -33,6 +33,8 @@ const DEFAULT_PRINTING: PrintingConfig = {
   copies: 1,
   enableQr: true,
   enableBarcode: true,
+  generateEntryTicket: true,
+  generateExitTicket: true,
   preferredAdapter: 'browser',
   customMessages: { entry: '', exit: '', receipt: '', cash: '', membership: '' },
 };
@@ -150,6 +152,30 @@ function PrintingForm({
                 </div>
               ))}
             </div>
+          </div>
+
+          <h3 className="text-sm font-semibold text-gray-900">Impresión automática</h3>
+          <p className="text-xs text-gray-500">
+            Algunos parqueaderos solo entregan ticket de ingreso (lo presenta, paga y retira el
+            vehículo). Otros también imprimen comprobante de salida al cobrar.
+          </p>
+          <div className="flex flex-wrap gap-4 text-sm">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={data.generateEntryTicket !== false}
+                onChange={(e) => setFlag('generateEntryTicket', e.target.checked)}
+              />
+              Ticket de ingreso al registrar
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={data.generateExitTicket !== false}
+                onChange={(e) => setFlag('generateExitTicket', e.target.checked)}
+              />
+              Ticket de salida al cobrar
+            </label>
           </div>
 
           <h3 className="text-sm font-semibold text-gray-900">Visibilidad</h3>

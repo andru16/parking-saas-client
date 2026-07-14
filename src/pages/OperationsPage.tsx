@@ -48,9 +48,6 @@ export function OperationsPage() {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Centro de Operaciones</h1>
-          <p className="text-sm text-gray-500">
-            POS de ingreso y cobro · F2 placa · F3 ingreso · F4 cobrar
-          </p>
         </div>
         <CashRegisterBanner />
       </div>

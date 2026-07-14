@@ -1,7 +1,12 @@
 import { useEffect, useId, useMemo, useState, type RefObject } from 'react';
 import type { PlateLookupResult, TicketItem, VehicleCategoryOption } from '@/api/tickets';
 import { useOpenTicket, usePlateLookup, useVehicleCategories } from '@/modules/operations/hooks/useOperations';
-import { usePrintTicket } from '@/modules/printing/hooks/usePrinting';
+import { usePrintConfig, usePrintTicket } from '@/modules/printing/hooks/usePrinting';
+import {
+  normalizePlate,
+  plateKindLabel,
+  resolveCategoryFromPlate,
+} from '@/modules/operations/utils/colombianPlate';
 
 interface EntryPanelProps {
   onTicketOpened: (ticket: TicketItem) => void;
@@ -15,12 +20,19 @@ export function EntryPanel({ onTicketOpened, plateInputRef, cashOpen }: EntryPan
   const [debouncedPlate, setDebouncedPlate] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [manualCategoryOverride, setManualCategoryOverride] = useState(false);
 
   const { data: categories = [] } = useVehicleCategories();
+  const { data: printConfig } = usePrintConfig();
   const selectedCategory = categories.find((c) => c.id === selectedCategoryId);
   const requiresPlate = selectedCategory?.requirements?.requiresPlate ?? true;
-  const plate = debouncedPlate.trim().toUpperCase();
+  const plate = normalizePlate(debouncedPlate);
   const lookupEnabled = Boolean(plate.length >= 2);
+
+  const plateResolution = useMemo(
+    () => resolveCategoryFromPlate(plate, categories),
+    [plate, categories],
+  );
 
   const { data: lookup, isFetching: isLookingUp } = usePlateLookup(plate, lookupEnabled);
   const openTicket = useOpenTicket();
@@ -28,36 +40,62 @@ export function EntryPanel({ onTicketOpened, plateInputRef, cashOpen }: EntryPan
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      setDebouncedPlate(plateInput.trim().toUpperCase());
+      setDebouncedPlate(normalizePlate(plateInput));
     }, 200);
     return () => window.clearTimeout(timer);
   }, [plateInput]);
 
   useEffect(() => {
+    setManualCategoryOverride(false);
+  }, [plate]);
+
+  useEffect(() => {
     if (lookup?.found && lookup.vehicle?.category?.id) {
       setSelectedCategoryId(lookup.vehicle.category.id);
+      return;
     }
-  }, [lookup]);
+
+    if (manualCategoryOverride) return;
+
+    if (plateResolution.categoryId) {
+      setSelectedCategoryId(plateResolution.categoryId);
+      return;
+    }
+
+    if (!lookupEnabled && categories.length === 1) {
+      setSelectedCategoryId(categories[0].id);
+    }
+  }, [lookup, plateResolution.categoryId, manualCategoryOverride, lookupEnabled, categories]);
 
   const hasOpenTicket = Boolean(lookup?.openTicket);
   const knownVehicle = Boolean(lookup?.found && lookup.vehicle);
   const needsQuickRegister = lookupEnabled && lookup && !lookup.found;
 
+  const autoCategoryReady =
+    Boolean(plateResolution.autoDetected && plateResolution.categoryId) && !manualCategoryOverride;
+
+  const showCategoryPicker =
+    !knownVehicle &&
+    (needsQuickRegister || (!lookupEnabled && categories.length > 0)) &&
+    !(autoCategoryReady && needsQuickRegister) &&
+    !(categories.length === 1 && !lookupEnabled);
+
   const canOpen = useMemo(() => {
     if (!cashOpen || openTicket.isPending || hasOpenTicket) return false;
+    if (plateResolution.reason === 'plate_kind_mismatch') return false;
     if (knownVehicle) return true;
     if (needsQuickRegister) {
       if (!selectedCategoryId) return false;
       if (requiresPlate && plate.length < 2) return false;
       return true;
     }
-    // Sin placa: solo categorías que no la requieren
     if (!lookupEnabled && selectedCategoryId && !requiresPlate) return true;
     return false;
   }, [
     cashOpen,
     openTicket.isPending,
     hasOpenTicket,
+    plateResolution.reason,
     knownVehicle,
     needsQuickRegister,
     selectedCategoryId,
@@ -73,6 +111,11 @@ export function EntryPanel({ onTicketOpened, plateInputRef, cashOpen }: EntryPan
       return;
     }
 
+    if (plateResolution.reason === 'plate_kind_mismatch' && plateResolution.message) {
+      setError(plateResolution.message);
+      return;
+    }
+
     try {
       const payload: {
         plate?: string;
@@ -84,21 +127,27 @@ export function EntryPanel({ onTicketOpened, plateInputRef, cashOpen }: EntryPan
         payload.vehicleId = lookup.vehicle.id;
         if (lookup.vehicle.plate) payload.plate = lookup.vehicle.plate;
       } else {
-        if (!selectedCategoryId) {
+        const categoryId = selectedCategoryId || plateResolution.categoryId;
+        if (!categoryId) {
           setError('Seleccione la categoría del vehículo.');
           return;
         }
-        payload.vehicleCategoryId = selectedCategoryId;
+        payload.vehicleCategoryId = categoryId;
         if (plate) payload.plate = plate;
       }
 
       const res = await openTicket.mutateAsync(payload);
       const opened = res.data.ticket;
       onTicketOpened(opened);
-      void printTicket.mutateAsync({ ticketId: opened.id, type: 'entry' });
+
+      if (printConfig?.print?.generateEntryTicket !== false) {
+        void printTicket.mutateAsync({ ticketId: opened.id, type: 'entry' });
+      }
+
       setPlateInput('');
       setDebouncedPlate('');
       setSelectedCategoryId('');
+      setManualCategoryOverride(false);
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
@@ -111,9 +160,7 @@ export function EntryPanel({ onTicketOpened, plateInputRef, cashOpen }: EntryPan
     <section className="flex h-full flex-col rounded-xl border border-gray-200 bg-white shadow-sm">
       <header className="border-b border-gray-100 px-4 py-3">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-900">Ingreso</h2>
-        <p className="mt-0.5 text-xs text-gray-500">
-          Busque por placa · F2 enfoca · Enter confirma
-        </p>
+        
       </header>
 
       <div className="flex flex-1 flex-col gap-3 p-4">
@@ -134,9 +181,9 @@ export function EntryPanel({ onTicketOpened, plateInputRef, cashOpen }: EntryPan
             autoComplete="off"
             autoFocus
             disabled={!cashOpen}
-            placeholder="Ej: ABC123"
+            placeholder="Ej: CBF424 · ZGT26F · UMO47"
             value={plateInput}
-            onChange={(e) => setPlateInput(e.target.value.toUpperCase())}
+            onChange={(e) => setPlateInput(normalizePlate(e.target.value))}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && canOpen) {
                 e.preventDefault();
@@ -152,11 +199,21 @@ export function EntryPanel({ onTicketOpened, plateInputRef, cashOpen }: EntryPan
           <LookupCard lookup={lookup} onSelectOpenTicket={onTicketOpened} />
         )}
 
-        {(needsQuickRegister || (!lookupEnabled && categories.length > 0)) && (
+      
+        {plateResolution.reason === 'plate_kind_mismatch' && plateResolution.message && (
+          <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            {plateResolution.message}
+          </p>
+        )}
+
+        {showCategoryPicker && (
           <QuickCategoryPicker
             categories={categories}
             selectedCategoryId={selectedCategoryId}
-            onSelect={setSelectedCategoryId}
+            onSelect={(id) => {
+              setManualCategoryOverride(true);
+              setSelectedCategoryId(id);
+            }}
             showHint={Boolean(needsQuickRegister)}
             selectedCategory={selectedCategory}
             plate={plate}
@@ -189,13 +246,7 @@ function LookupCard({
   lookup: PlateLookupResult;
   onSelectOpenTicket: (ticket: TicketItem) => void;
 }) {
-  if (!lookup.found) {
-    return (
-      <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-        Vehículo no registrado. Elija categoría para crear e ingresar.
-      </div>
-    );
-  }
+  
 
   const { vehicle, openTicket, activeMembership } = lookup;
 
@@ -257,7 +308,9 @@ function QuickCategoryPicker({
   return (
     <div className="space-y-2 rounded-lg border border-dashed border-gray-300 p-3">
       {showHint && (
-        <p className="text-xs font-medium text-gray-600">Registro rápido (solo categoría)</p>
+        <p className="text-xs font-medium text-gray-600">
+          Elija categoría (no se pudo detectar automáticamente)
+        </p>
       )}
       <div className="grid grid-cols-1 gap-1.5">
         {categories.map((cat) => (

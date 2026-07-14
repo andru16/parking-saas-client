@@ -1,7 +1,9 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { VehicleCategoryItem } from '@/api/setup';
 import { SettingsFormActions } from '@/modules/settings/components/SettingsSectionShell';
 import { useDebouncedAutosave } from '../../hooks/useDebouncedAutosave';
+import type { SetupStepSubmit } from '../../types';
+import { confirmAction, showInfo } from '@/lib/dialogs';
 
 interface Props {
   initialCategories: VehicleCategoryItem[];
@@ -12,6 +14,7 @@ interface Props {
   onCancel?: () => void;
   /** Mostrar foto/observaciones (settings). */
   showExtendedRequirements?: boolean;
+  registerStepSubmit?: (fn: SetupStepSubmit) => () => void;
 }
 
 /** Opciones fijas del setup — el resto de campos se rellenan con valores por defecto. */
@@ -52,10 +55,12 @@ export function VehicleCategoriesStepForm({
   autosave = true,
   onCancel,
   showExtendedRequirements = false,
+  registerStepSubmit,
 }: Props) {
   const [categories, setCategories] = useState<VehicleCategoryItem[]>(() =>
     initialCategories.map((c) => ({ ...c, id: c.id ? String(c.id) : undefined })),
   );
+  const [localError, setLocalError] = useState<string | null>(null);
   const skipNextSaveRef = useRef(() => {});
 
   const persist = useCallback(
@@ -73,6 +78,27 @@ export function VehicleCategoriesStepForm({
     enabled: autosave && !readOnly && categories.length > 0,
   });
   skipNextSaveRef.current = skipNextSave;
+
+  useEffect(() => {
+    if (!registerStepSubmit) return;
+    return registerStepSubmit(async () => {
+      setLocalError(null);
+      if (categories.length === 0) {
+        setLocalError('Agregue al menos una categoría de vehículo');
+        return false;
+      }
+      if (!categories.some((c) => c.isActive)) {
+        setLocalError('Active al menos una categoría de vehículo');
+        return false;
+      }
+      if (categories.some((c) => !c.name.trim())) {
+        setLocalError('Todas las categorías deben tener nombre');
+        return false;
+      }
+      await persist(categories);
+      return true;
+    });
+  }, [registerStepSubmit, categories, persist]);
 
   const availablePresets = useMemo(() => {
     const used = new Set(categories.map((c) => c.name));
@@ -122,14 +148,23 @@ export function VehicleCategoriesStepForm({
   const removeCategory = (index: number) => {
     if (readOnly) return;
     const category = categories[index];
-    if (category?.inUse) {
-      alert(
-        'Esta categoría está en uso. Desactívela en lugar de eliminarla.',
-      );
-      return;
-    }
-    if (!confirm('¿Eliminar esta categoría?')) return;
-    setCategories((prev) => prev.filter((_, i) => i !== index));
+    void (async () => {
+      if (category?.inUse) {
+        await showInfo(
+          'Categoría en uso',
+          'Esta categoría está en uso. Desactívela en lugar de eliminarla.',
+        );
+        return;
+      }
+      const ok = await confirmAction({
+        title: '¿Eliminar esta categoría?',
+        text: category?.name ? `Se eliminará “${category.name}”.` : undefined,
+        confirmText: 'Eliminar',
+        danger: true,
+      });
+      if (!ok) return;
+      setCategories((prev) => prev.filter((_, i) => i !== index));
+    })();
   };
 
   const addCategory = () => {
@@ -153,6 +188,8 @@ export function VehicleCategoriesStepForm({
         Seleccione las categorías que opera su parqueadero. Puede activar o desactivar cada una y
         indicar si requiere placa o propietario.
       </p>
+
+      {localError && <p className="text-sm text-red-600">{localError}</p>}
 
       {categories.map((category, index) => {
         const optionsForRow = CATEGORY_PRESETS.filter(

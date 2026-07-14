@@ -1,5 +1,6 @@
 import api from '@/services/api';
 import type { ApiResponse } from '@/api/types';
+import type { PrintingConfig } from '@/api/settings';
 
 export type PrintDocumentType =
   | 'entry'
@@ -167,5 +168,16 @@ export async function listPrintJobs(params?: {
   ApiResponse<{ items: PrintJobItem[]; pagination: { page: number; limit: number; total: number } }>
 > {
   const { data } = await api.get('/printing/jobs', { params });
+  return data;
+}
+
+export interface OrgPrintConfigResponse {
+  organization: Record<string, unknown>;
+  print: PrintingConfig;
+  locale: Record<string, string>;
+}
+
+export async function getPrintConfig(): Promise<ApiResponse<{ config: OrgPrintConfigResponse }>> {
+  const { data } = await api.get('/printing/config');
   return data;
 }

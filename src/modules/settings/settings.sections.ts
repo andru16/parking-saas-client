@@ -21,8 +21,7 @@ export type SettingsTabId =
   | 'rates'
   | 'cash'
   | 'printing'
-  | 'security'
-  | 'more';
+  | 'security';
 
 export const SETTINGS_TABS: { id: SettingsTabId; label: string }[] = [
   { id: 'general', label: 'General' },
@@ -32,7 +31,6 @@ export const SETTINGS_TABS: { id: SettingsTabId; label: string }[] = [
   { id: 'cash', label: 'Caja' },
   { id: 'printing', label: 'Impresión' },
   { id: 'security', label: 'Seguridad' },
-  { id: 'more', label: 'Más' },
 ];
 
 export const SETTINGS_SECTIONS: SettingsSectionDef[] = [
@@ -123,36 +121,6 @@ export const SETTINGS_SECTIONS: SettingsSectionDef[] = [
     description: 'Roles RBAC y permisos por módulo.',
     permissions: [PERMISSIONS.ROLES_MANAGE],
     tab: 'security',
-  },
-  {
-    id: 'memberships',
-    apiKey: 'memberships',
-    label: 'Membresías',
-    path: '/settings/memberships',
-    description: 'Planes, duraciones y recordatorios.',
-    permissions: [PERMISSIONS.SETTINGS_MANAGE],
-    tab: 'more',
-    featureFlag: 'memberships',
-  },
-  {
-    id: 'integrations',
-    apiKey: 'integrations',
-    label: 'Integraciones',
-    path: '/settings/integrations',
-    description: 'WhatsApp, correo, QR, lectores y API.',
-    permissions: [PERMISSIONS.SETTINGS_MANAGE],
-    tab: 'more',
-    featureFlag: 'integrations',
-  },
-  {
-    id: 'backups',
-    apiKey: 'backups',
-    label: 'Backups',
-    path: '/settings/backups',
-    description: 'Copias de seguridad y recuperación.',
-    permissions: [PERMISSIONS.BACKUPS_VIEW, PERMISSIONS.BACKUPS_MANAGE],
-    tab: 'more',
-    featureFlag: 'settings',
   },
 ];
 

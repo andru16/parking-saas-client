@@ -6,6 +6,7 @@ import { isAxiosError } from 'axios';
 import { signupSchema, type SignupFormValues } from '@/modules/signup/signup.schema';
 import { useSignupMutation } from '@/modules/signup/useSignupMutation';
 import type { ApiErrorResponse } from '@/api/signup';
+import { HoneypotFields, useFormStartedAt } from '@/lib/validation/HoneypotFields';
 
 function FormField({
   label,
@@ -32,6 +33,7 @@ export function SignupPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const formStartedAt = useFormStartedAt();
 
   const signupMutation = useSignupMutation();
 
@@ -41,6 +43,8 @@ export function SignupPage() {
     formState: { errors, isSubmitting },
   } = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
+    mode: 'onBlur',
+    reValidateMode: 'onChange',
     defaultValues: {
       admin: {
         firstName: '',
@@ -55,6 +59,8 @@ export function SignupPage() {
         country: '',
         phone: '',
       },
+      website: '',
+      formStartedAt,
     },
   });
 
@@ -70,6 +76,8 @@ export function SignupPage() {
           ...values.organization,
           phone: values.organization.phone || undefined,
         },
+        website: values.website || '',
+        formStartedAt: values.formStartedAt,
       });
 
       setSuccessMessage(response.message);
@@ -131,8 +139,11 @@ export function SignupPage() {
       <form
         onSubmit={onSubmit}
         noValidate
-        className="space-y-8 rounded-xl border border-gray-200 bg-white p-6 sm:p-8 shadow-sm"
+        className="relative space-y-8 rounded-xl border border-gray-200 bg-white p-6 sm:p-8 shadow-sm"
       >
+        <HoneypotFields websiteRegister={register('website')} />
+        <input type="hidden" {...register('formStartedAt', { valueAsNumber: true })} />
+
         {serverError && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {serverError}

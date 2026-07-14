@@ -18,6 +18,9 @@ export interface SignupOrganizationInput {
 export interface SignupRequest {
   admin: SignupAdminInput;
   organization: SignupOrganizationInput;
+  /** Honeypot anti-bot — debe ir vacío. */
+  website?: string;
+  formStartedAt: number;
 }
 
 export interface SignupResponse {

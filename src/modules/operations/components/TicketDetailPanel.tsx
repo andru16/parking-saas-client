@@ -12,7 +12,7 @@ import { useAuth } from '@/modules/auth/AuthProvider';
 import { hasPermission, PERMISSIONS } from '@/modules/auth/permissions';
 import { posRealtime } from '@/modules/operations/posRealtime';
 import { useQueryClient } from '@tanstack/react-query';
-import { usePrintTicket, useReprintTicket } from '@/modules/printing/hooks/usePrinting';
+import { usePrintConfig, usePrintTicket, useReprintTicket } from '@/modules/printing/hooks/usePrinting';
 
 interface TicketDetailPanelProps {
   ticket: TicketItem | null;
@@ -39,6 +39,7 @@ export function TicketDetailPanel({
   const cancelMutation = useCancelTicket();
   const printMutation = usePrintTicket();
   const reprintMutation = useReprintTicket();
+  const { data: printConfig } = usePrintConfig();
   const qc = useQueryClient();
 
   const { data: preview, isLoading: loadingPreview } = useExitPreview(
@@ -130,7 +131,6 @@ export function TicketDetailPanel({
           <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-900">
             Panel del ticket
           </h2>
-          <p className="text-xs text-gray-500">F4 cobrar · ESC cerrar diálogos</p>
         </header>
 
         <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-4">
@@ -295,7 +295,9 @@ export function TicketDetailPanel({
           qc.invalidateQueries({ queryKey: operationsKeys.openTickets() });
           posRealtime.emit({ type: 'ticket:closed', ticketId: ticket.id });
           posRealtime.emit({ type: 'tickets:changed' });
-          void printMutation.mutateAsync({ ticketId: ticket.id, type: 'exit' });
+          if (printConfig?.print?.generateExitTicket !== false) {
+            void printMutation.mutateAsync({ ticketId: ticket.id, type: 'exit' });
+          }
           onExitComplete();
         }}
       />

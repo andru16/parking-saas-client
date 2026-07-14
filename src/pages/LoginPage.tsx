@@ -8,11 +8,15 @@ import { useAuth } from '@/modules/auth/AuthProvider';
 import { resolveLoginRedirect } from '@/modules/auth/authRedirect';
 import { AuthLayout } from '@/layouts/AuthLayout';
 import { GuestRoute } from '@/routes/GuestRoute';
+import { emailSchema } from '@/lib/validation/contactFields';
+import { HoneypotFields, useFormStartedAt } from '@/lib/validation/HoneypotFields';
 
 const loginSchema = z.object({
-  email: z.string().email('Ingrese un correo válido'),
+  email: emailSchema,
   password: z.string().min(1, 'La contraseña es obligatoria'),
   rememberMe: z.boolean(),
+  website: z.string().max(0).optional().or(z.literal('')),
+  formStartedAt: z.number().int().positive(),
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
@@ -23,6 +27,7 @@ function LoginFormContent() {
   const location = useLocation();
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const formStartedAt = useFormStartedAt();
 
   const fromPath = (location.state as { from?: string } | null)?.from ?? null;
 
@@ -32,13 +37,22 @@ function LoginFormContent() {
     formState: { errors, isSubmitting },
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '', rememberMe: false },
+    defaultValues: {
+      email: '',
+      password: '',
+      rememberMe: false,
+      website: '',
+      formStartedAt,
+    },
   });
 
   const onSubmit = handleSubmit(async (values) => {
     setError(null);
     try {
-      const loggedInUser = await login(values.email, values.password, values.rememberMe);
+      const loggedInUser = await login(values.email, values.password, values.rememberMe, {
+        website: values.website || '',
+        formStartedAt: values.formStartedAt,
+      });
       navigate(resolveLoginRedirect(loggedInUser, fromPath), { replace: true });
     } catch (err) {
       if (isAxiosError(err)) {
@@ -60,7 +74,10 @@ function LoginFormContent() {
   return (
     <AuthLayout title="Iniciar sesión" subtitle="Acceda al panel de su parqueadero">
       <div className="rounded-xl bg-white border border-gray-200 shadow-sm p-6 sm:p-8">
-        <form onSubmit={onSubmit} noValidate className="space-y-5">
+        <form onSubmit={onSubmit} noValidate className="relative space-y-5">
+          <HoneypotFields websiteRegister={register('website')} />
+          <input type="hidden" {...register('formStartedAt', { valueAsNumber: true })} />
+
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
               Correo electrónico
@@ -74,7 +91,7 @@ function LoginFormContent() {
               {...register('email')}
             />
             {errors.email && (
-              <p className="text-sm text-red-600 mt-1">{errors.email.message}</p>
+              <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
             )}
           </div>
 
@@ -101,7 +118,7 @@ function LoginFormContent() {
               </button>
             </div>
             {errors.password && (
-              <p className="text-sm text-red-600 mt-1">{errors.password.message}</p>
+              <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
             )}
           </div>
 

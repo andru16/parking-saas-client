@@ -1,4 +1,11 @@
 import { z } from 'zod';
+import {
+  businessNameSchema,
+  emailSchema,
+  optionalPhoneSchema,
+  personNameSchema,
+  placeNameSchema,
+} from '@/lib/validation/contactFields';
 
 const passwordSchema = z
   .string()
@@ -8,22 +15,29 @@ const passwordSchema = z
 export const signupSchema = z
   .object({
     admin: z.object({
-      firstName: z.string().trim().min(1, 'El nombre es obligatorio').max(80),
-      lastName: z.string().trim().min(1, 'Los apellidos son obligatorios').max(80),
-      email: z.string().trim().email('Formato de correo inválido'),
+      firstName: personNameSchema('El nombre', 80),
+      lastName: personNameSchema('Los apellidos', 80),
+      email: emailSchema,
       password: passwordSchema,
       confirmPassword: z.string().min(1, 'Confirma tu contraseña'),
     }),
     organization: z.object({
-      name: z.string().trim().min(1, 'El nombre del parqueadero es obligatorio').max(150),
-      city: z.string().trim().min(1, 'La ciudad es obligatoria').max(100),
-      country: z.string().trim().min(1, 'El país es obligatorio').max(100),
-      phone: z.string().trim().max(20).optional().or(z.literal('')),
+      name: businessNameSchema('El nombre del parqueadero', 150),
+      city: placeNameSchema('La ciudad', 100),
+      country: placeNameSchema('El país', 100),
+      phone: optionalPhoneSchema,
     }),
+    /** Honeypot anti-bot: debe permanecer vacío. */
+    website: z.literal('').or(z.string().max(0)),
+    formStartedAt: z.number().int().positive(),
   })
   .refine((data) => data.admin.password === data.admin.confirmPassword, {
     message: 'Las contraseñas no coinciden',
     path: ['admin', 'confirmPassword'],
+  })
+  .refine((data) => !data.website, {
+    message: 'No se pudo completar la solicitud. Intenta de nuevo.',
+    path: ['website'],
   });
 
 export type SignupFormValues = z.infer<typeof signupSchema>;
