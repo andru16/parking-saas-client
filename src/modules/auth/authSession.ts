@@ -14,13 +14,23 @@ const refreshClient = axios.create({
 
 let refreshPromise: Promise<string | null> | null = null;
 
+export type RefreshOptions = {
+  /**
+   * Si es true, un fallo no marca "sesión expirada".
+   * Usar en el bootstrap de visitantes sin access token.
+   */
+  silent?: boolean;
+};
+
 /**
  * Renueva el access token usando la cookie HttpOnly de refresh.
  */
-export async function refreshAccessToken(): Promise<string | null> {
+export async function refreshAccessToken(options?: RefreshOptions): Promise<string | null> {
   if (refreshPromise) {
     return refreshPromise;
   }
+
+  const silent = options?.silent === true;
 
   refreshPromise = (async () => {
     try {
@@ -30,7 +40,10 @@ export async function refreshAccessToken(): Promise<string | null> {
       return token;
     } catch {
       tokenStorage.clear();
-      notifySessionExpired();
+      // Solo avisamos expiración cuando había una sesión esperada (no en primeros visits).
+      if (!silent) {
+        notifySessionExpired();
+      }
       return null;
     } finally {
       refreshPromise = null;

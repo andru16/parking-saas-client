@@ -2,15 +2,24 @@ import { useEffect, type ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/modules/auth/AuthProvider';
 
-/** Rutas públicas donde no se fuerza el flujo de sesión expirada. */
-const GUEST_PUBLIC_PATHS = new Set(['/registro', '/recuperar-contrasena', '/sesion-expirada']);
+/**
+ * Rutas públicas de invitado: nunca forzar pantallazo de “sesión expirada”.
+ * Esa pantalla solo aplica cuando había sesión y expiró.
+ */
+const GUEST_PUBLIC_PATHS = new Set([
+  '/login',
+  '/registro',
+  '/recuperar-contrasena',
+  '/sesion-expirada',
+]);
 
 export function GuestRoute({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading, user, sessionExpired, clearSessionExpired } = useAuth();
   const location = useLocation();
 
   useEffect(() => {
-    if (sessionExpired && location.pathname === '/registro') {
+    // Si llega a login/registro con la bandera, límpiala: es un visitante entrando al flujo público.
+    if (sessionExpired && (location.pathname === '/login' || location.pathname === '/registro')) {
       clearSessionExpired();
     }
   }, [sessionExpired, location.pathname, clearSessionExpired]);
@@ -23,7 +32,6 @@ export function GuestRoute({ children }: { children: ReactNode }) {
     );
   }
 
-  // Permitir registro / recuperación aunque haya bandera de sesión expirada.
   if (sessionExpired && !GUEST_PUBLIC_PATHS.has(location.pathname)) {
     return <Navigate to="/sesion-expirada" replace />;
   }

@@ -11,7 +11,7 @@ import type {
 import { SETUP_STEPS } from '../constants';
 import type { GeneralInfoFormValues, OperationalFormValues } from '../schemas/setup.schemas';
 import type { SetupStepSubmit } from '../types';
-import { useSaveSetupStep, useSetupProgress, useSetupStepData } from '../hooks/useSetup';
+import { useSaveSetupStep, useSetupStepData } from '../hooks/useSetup';
 import { SetupProgressBar } from './SetupProgressBar';
 import { GeneralInfoStepForm } from './steps/GeneralInfoStepForm';
 import { OperationalStepForm } from './steps/OperationalStepForm';
@@ -23,7 +23,6 @@ export function SetupWizard() {
   const [searchParams] = useSearchParams();
   const isReopen = searchParams.get('reopen') === '1';
   const stepParam = searchParams.get('step');
-  const { data: progress } = useSetupProgress();
   const initialStep =
     stepParam && SETUP_STEPS.some((s) => s.key === stepParam)
       ? (stepParam as SetupStepKey)
@@ -32,8 +31,6 @@ export function SetupWizard() {
   const [error, setError] = useState<string | null>(null);
   const [advancing, setAdvancing] = useState(false);
   const stepSubmitRef = useRef<SetupStepSubmit | null>(null);
-
-  const activeStep = progress?.currentStep ?? currentStep;
 
   const stepIndex = useMemo(
     () => SETUP_STEPS.findIndex((s) => s.key === currentStep),

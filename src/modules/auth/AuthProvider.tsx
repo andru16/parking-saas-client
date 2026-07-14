@@ -42,7 +42,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshUser = useCallback(async () => {
     const token = tokenStorage.get();
     if (!token) {
-      const renewed = await refreshAccessToken();
+      // Bootstrap / revalidación sin access token: no tratar fallo como “sesión expirada”.
+      const renewed = await refreshAccessToken({ silent: true });
       if (!renewed) {
         setUser(null);
         return;
@@ -69,7 +70,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         let token = tokenStorage.get();
 
         if (!token) {
-          token = await refreshAccessToken();
+          // Visitante sin token: intentar cookie de refresh en silencio.
+          token = await refreshAccessToken({ silent: true });
         }
 
         if (!token) {

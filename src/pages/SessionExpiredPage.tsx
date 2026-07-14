@@ -1,9 +1,14 @@
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '@/modules/auth/AuthProvider';
 import { AuthLayout } from '@/layouts/AuthLayout';
 
 export function SessionExpiredPage() {
-  const { clearSessionExpired } = useAuth();
+  const { clearSessionExpired, sessionExpired, isAuthenticated, isLoading } = useAuth();
+
+  // Sin sesión previa / bandera: no tiene sentido mostrar esta pantalla.
+  if (!isLoading && !sessionExpired && !isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <AuthLayout title="Sesión expirada" subtitle="Su sesión ha finalizado por inactividad o seguridad.">

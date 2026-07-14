@@ -4,7 +4,6 @@ import { useOpenTicket, usePlateLookup, useVehicleCategories } from '@/modules/o
 import { usePrintConfig, usePrintTicket } from '@/modules/printing/hooks/usePrinting';
 import {
   normalizePlate,
-  plateKindLabel,
   resolveCategoryFromPlate,
 } from '@/modules/operations/utils/colombianPlate';
 
