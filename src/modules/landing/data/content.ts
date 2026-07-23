@@ -105,53 +105,8 @@ export interface PricingPlan {
   cta: string;
 }
 
-export const PLANS: PricingPlan[] = [
-  {
-    id: 'gratis',
-    name: 'Gratis',
-    price: '$0',
-    period: '/mes',
-    description: 'Ideal para empezar y validar el flujo operativo.',
-    features: [
-      '1 estacionamiento',
-      'Hasta 50 vehículos por día',
-      'Operación básica de entradas y salidas',
-      'Soporte básico por correo',
-    ],
-    cta: 'Comenzar ahora',
-  },
-  {
-    id: 'profesional',
-    name: 'Profesional',
-    price: '$89.000',
-    period: '/mes',
-    description: 'Para parqueaderos en crecimiento que necesitan control total.',
-    features: [
-      'Estacionamientos ilimitados',
-      'Empleados ilimitados',
-      'Reportes avanzados',
-      'Respaldos automáticos',
-      'Soporte prioritario',
-    ],
-    highlighted: true,
-    cta: 'Comenzar ahora',
-  },
-  {
-    id: 'empresarial',
-    name: 'Empresarial',
-    price: 'A medida',
-    period: '',
-    description: 'Para operadores con varias sedes y necesidades de integración.',
-    features: [
-      'Múltiples sedes centralizadas',
-      'Acceso a API',
-      'Soporte dedicado',
-      'Personalización de flujos',
-      'Onboarding asistido',
-    ],
-    cta: 'Comenzar ahora',
-  },
-];
+/** @deprecated La landing consume `/public/plans`. Se mantiene por compatibilidad de tipos. */
+export const PLANS: PricingPlan[] = [];
 
 export const TESTIMONIALS = [
   {

@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { useEffect, useId, useState } from 'react';
-import { APP_NAME, NAV_LINKS } from '@/modules/landing/data/content';
+import { NAV_LINKS } from '@/modules/landing/data/content';
+import { AppLogo } from '@/components/brand/AppLogo';
 
 export function LandingNav() {
   const [open, setOpen] = useState(false);
@@ -17,13 +18,11 @@ export function LandingNav() {
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/85 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <a href="#inicio" className="group flex items-center gap-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2 rounded-lg">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-600 text-sm font-bold text-white shadow-sm shadow-primary-600/30">
-            P
-          </span>
-          <span className="text-lg font-bold tracking-tight text-slate-900 group-hover:text-primary-800">
-            {APP_NAME}
-          </span>
+        <a
+          href="#inicio"
+          className="rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2"
+        >
+          <AppLogo size="sm" className="max-h-11" />
         </a>
 
         <nav className="hidden items-center gap-1 lg:flex" aria-label="Secciones principales">

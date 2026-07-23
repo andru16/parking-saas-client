@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { APP_NAME } from '@/modules/landing/data/content';
+import { AppLogo } from '@/components/brand/AppLogo';
 
 type FooterLink =
   | { label: string; href: string }
@@ -9,7 +10,7 @@ const FOOTER_LINKS: FooterLink[] = [
   { href: '#inicio', label: 'Inicio' },
   { href: '#planes', label: 'Planes' },
   { href: '#caracteristicas', label: 'Características' },
-  { href: 'mailto:hola@parkingsaas.co', label: 'Contacto' },
+  { href: `mailto:${import.meta.env.VITE_SUPPORT_EMAIL?.trim() || 'soporte.parkingsaas@gmail.com'}`, label: 'Contacto' },
   { to: '/privacidad', label: 'Política de privacidad' },
   { to: '/terminos', label: 'Términos' },
 ];
@@ -21,12 +22,7 @@ export function LandingFooter() {
     <footer className="border-t border-slate-200 bg-slate-950 text-slate-300" aria-label="Pie de página">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.2fr_1fr] lg:px-8">
         <div>
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-600 text-sm font-bold text-white">
-              P
-            </span>
-            <span className="text-lg font-bold text-white">{APP_NAME}</span>
-          </div>
+          <AppLogo size="md" className="max-h-16 brightness-110" />
           <p className="mt-4 max-w-sm text-sm leading-relaxed text-slate-400">
             Software para administrar estacionamientos con claridad operativa, pagos y reportes en un solo lugar.
           </p>

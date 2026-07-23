@@ -2,6 +2,8 @@ import { useAuth } from '@/modules/auth/AuthProvider';
 
 const STATUS_LABELS: Record<string, string> = {
   trial: 'Trial',
+  trial_premium: 'Prueba premium',
+  awaiting_activation: 'Pendiente de activación',
   active: 'Activa',
   grace_period: 'Período de gracia',
   suspended: 'Suspendida',

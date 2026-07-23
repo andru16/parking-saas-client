@@ -12,7 +12,8 @@ import { useAuth } from '@/modules/auth/AuthProvider';
 import { hasPermission, PERMISSIONS } from '@/modules/auth/permissions';
 import { posRealtime } from '@/modules/operations/posRealtime';
 import { useQueryClient } from '@tanstack/react-query';
-import { usePrintConfig, usePrintTicket, useReprintTicket } from '@/modules/printing/hooks/usePrinting';
+import { usePrintConfig, usePrintTicket, useReprintTicket, printingKeys, shouldAutoPrintExit } from '@/modules/printing/hooks/usePrinting';
+import type { OrgPrintConfigResponse } from '@/api/printing';
 
 interface TicketDetailPanelProps {
   ticket: TicketItem | null;
@@ -295,7 +296,11 @@ export function TicketDetailPanel({
           qc.invalidateQueries({ queryKey: operationsKeys.openTickets() });
           posRealtime.emit({ type: 'ticket:closed', ticketId: ticket.id });
           posRealtime.emit({ type: 'tickets:changed' });
-          if (printConfig?.print?.generateExitTicket !== false) {
+          if (
+            shouldAutoPrintExit(
+              qc.getQueryData<OrgPrintConfigResponse>(printingKeys.config()) ?? printConfig,
+            )
+          ) {
             void printMutation.mutateAsync({ ticketId: ticket.id, type: 'exit' });
           }
           onExitComplete();

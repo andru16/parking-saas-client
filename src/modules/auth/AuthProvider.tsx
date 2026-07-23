@@ -10,6 +10,7 @@ import {
 import { loginRequest, logoutRequest, meRequest, type AuthUser } from '@/api/auth';
 import { registerSessionExpiredHandler } from '@/modules/auth/authEvents';
 import { refreshAccessToken } from '@/modules/auth/authSession';
+import { startSessionKeepAlive } from '@/modules/auth/sessionKeepAlive';
 import { tokenStorage } from './tokenStorage';
 
 interface AuthContextValue {
@@ -95,6 +96,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       active = false;
     };
   }, []);
+
+  // Keep-alive: renovar token con actividad; expirar solo por inactividad prolongada.
+  useEffect(() => {
+    if (!user) return;
+    return startSessionKeepAlive();
+  }, [user]);
 
   const login = useCallback(
     async (

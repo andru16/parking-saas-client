@@ -5,6 +5,7 @@ import {
   saveSettingsSection,
   type SettingsSectionKey,
 } from '@/api/settings';
+import { printingKeys } from '@/modules/printing/hooks/usePrinting';
 
 export const settingsKeys = {
   all: ['settings-center'] as const,
@@ -42,6 +43,24 @@ export function useSaveSettingsSection<K extends SettingsSectionKey>(sectionKey:
     onSuccess: (response) => {
       queryClient.setQueryData(settingsKeys.section(sectionKey), response.data);
       queryClient.invalidateQueries({ queryKey: settingsKeys.sections() });
+      if (sectionKey === 'printing') {
+        const saved = response.data?.data;
+        if (saved && typeof saved === 'object') {
+          queryClient.setQueryData(printingKeys.config(), (prev: unknown) => {
+            const previous = (prev ?? {}) as {
+              organization?: Record<string, unknown>;
+              print?: Record<string, unknown>;
+              locale?: Record<string, string>;
+            };
+            return {
+              organization: previous.organization ?? {},
+              locale: previous.locale ?? {},
+              print: { ...(previous.print ?? {}), ...saved },
+            };
+          });
+        }
+        void queryClient.invalidateQueries({ queryKey: printingKeys.config() });
+      }
     },
   });
 }

@@ -14,7 +14,9 @@ import { PERMISSIONS } from '@/modules/auth/permissions';
 import { ProtectedRoute } from '@/routes/ProtectedRoute';
 import { GuestRoute } from '@/routes/GuestRoute';
 import { SetupGuard, SetupRoute } from '@/routes/SetupGuard';
+import { SubscriptionAccessGuard, PlanOnboardingRoute } from '@/routes/SubscriptionAccessGuard';
 import { RoleGuard } from '@/modules/navigation/RoleGuard';
+import { FeatureGuard } from '@/modules/billing/FeatureGuard';
 import { SuperAdminAuthProvider } from '@/modules/superAdmin/SuperAdminAuthProvider';
 import { SuperAdminProtectedRoute } from '@/modules/superAdmin/SuperAdminGuards';
 import { SuperAdminLayout } from '@/modules/superAdmin/SuperAdminLayout';
@@ -30,6 +32,7 @@ function lazyPage<T extends ComponentType<object>>(
 }
 
 const SignupPage = lazyPage(() => import('@/pages/SignupPage'), 'SignupPage');
+const VerifyEmailPage = lazyPage(() => import('@/pages/VerifyEmailPage'), 'VerifyEmailPage');
 const ForgotPasswordPage = lazyPage(() => import('@/pages/ForgotPasswordPage'), 'ForgotPasswordPage');
 const SetupPage = lazyPage(() => import('@/pages/SetupPage'), 'SetupPage');
 const DashboardPage = lazyPage(() => import('@/pages/DashboardPage'), 'DashboardPage');
@@ -40,6 +43,7 @@ const AuditPage = lazyPage(() => import('@/pages/AuditPage'), 'AuditPage');
 const NotificationsPage = lazyPage(() => import('@/pages/NotificationsPage'), 'NotificationsPage');
 const MembersPage = lazyPage(() => import('@/pages/MembersPage'), 'MembersPage');
 const MembershipsPage = lazyPage(() => import('@/pages/MembershipsPage'), 'MembershipsPage');
+const SitesPage = lazyPage(() => import('@/pages/SitesPage'), 'SitesPage');
 const PaymentsPage = lazyPage(() => import('@/pages/PaymentsPage'), 'PaymentsPage');
 const SettingsLayout = lazyPage(() => import('@/pages/settings/SettingsLayout'), 'SettingsLayout');
 const SettingsIndexPage = lazyPage(
@@ -142,6 +146,26 @@ const SuperAdminAuditPage = lazyPage(
 const SuperAdminNotificationsPage = lazyPage(
   () => import('@/modules/superAdmin/pages/SuperAdminNotificationsPage'),
   'SuperAdminNotificationsPage',
+);
+const SuperAdminActivationRequestsPage = lazyPage(
+  () => import('@/pages/SuperAdminActivationRequestsPage'),
+  'SuperAdminActivationRequestsPage',
+);
+const SuperAdminActivationRequestDetailPage = lazyPage(
+  () => import('@/pages/SuperAdminActivationRequestsPage'),
+  'SuperAdminActivationRequestDetailPage',
+);
+const PlanWelcomePage = lazyPage(
+  () => import('@/modules/subscriptionActivation/pages/PlanWelcomePage'),
+  'PlanWelcomePage',
+);
+const ActivateSubscriptionPage = lazyPage(
+  () => import('@/modules/subscriptionActivation/pages/ActivateSubscriptionPage'),
+  'ActivateSubscriptionPage',
+);
+const TrialEndedPage = lazyPage(
+  () => import('@/modules/subscriptionActivation/pages/TrialEndedPage'),
+  'TrialEndedPage',
 );
 
 function RouteFallback() {
@@ -277,6 +301,22 @@ export const router = createBrowserRouter([
                 ),
               },
               {
+                path: 'activations',
+                element: (
+                  <SuspensePage>
+                    <SuperAdminActivationRequestsPage />
+                  </SuspensePage>
+                ),
+              },
+              {
+                path: 'activations/:id',
+                element: (
+                  <SuspensePage>
+                    <SuperAdminActivationRequestDetailPage />
+                  </SuspensePage>
+                ),
+              },
+              {
                 path: 'plans/new',
                 element: (
                   <SuspensePage>
@@ -312,6 +352,16 @@ export const router = createBrowserRouter([
     element: <TermsPage />,
   },
   { path: '/login', element: <LoginPage /> },
+  {
+    path: '/verificar-email',
+    element: (
+      <GuestRoute>
+        <SuspensePage>
+          <VerifyEmailPage />
+        </SuspensePage>
+      </GuestRoute>
+    ),
+  },
   {
     path: '/registro',
     element: (
@@ -370,11 +420,46 @@ export const router = createBrowserRouter([
   },
 
   {
+    path: '/bienvenida-plan',
     element: (
       <ProtectedRoute>
-        <SetupGuard>
-          <AppLayout />
-        </SetupGuard>
+        <PlanOnboardingRoute>
+          <SuspensePage>
+            <PlanWelcomePage />
+          </SuspensePage>
+        </PlanOnboardingRoute>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/activar-suscripcion',
+    element: (
+      <ProtectedRoute>
+        <SuspensePage>
+          <ActivateSubscriptionPage />
+        </SuspensePage>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/prueba-finalizada',
+    element: (
+      <ProtectedRoute>
+        <SuspensePage>
+          <TrialEndedPage />
+        </SuspensePage>
+      </ProtectedRoute>
+    ),
+  },
+
+  {
+    element: (
+      <ProtectedRoute>
+        <SubscriptionAccessGuard>
+          <SetupGuard>
+            <AppLayout />
+          </SetupGuard>
+        </SubscriptionAccessGuard>
       </ProtectedRoute>
     ),
     children: [
@@ -419,11 +504,13 @@ export const router = createBrowserRouter([
       {
         path: '/audit',
         element: (
-          <RoleGuard permissions={PERMISSIONS.AUDIT_VIEW}>
-            <SuspensePage>
-              <AuditPage />
-            </SuspensePage>
-          </RoleGuard>
+          <FeatureGuard feature="audit">
+            <RoleGuard permissions={PERMISSIONS.AUDIT_VIEW}>
+              <SuspensePage>
+                <AuditPage />
+              </SuspensePage>
+            </RoleGuard>
+          </FeatureGuard>
         ),
       },
       {
@@ -461,21 +548,37 @@ export const router = createBrowserRouter([
       {
         path: '/members',
         element: (
-          <RoleGuard permissions={PERMISSIONS.MEMBERS_MANAGE}>
-            <SuspensePage>
-              <MembersPage />
-            </SuspensePage>
-          </RoleGuard>
+          <FeatureGuard feature="memberships">
+            <RoleGuard permissions={PERMISSIONS.MEMBERS_MANAGE}>
+              <SuspensePage>
+                <MembersPage />
+              </SuspensePage>
+            </RoleGuard>
+          </FeatureGuard>
         ),
       },
       {
         path: '/memberships',
         element: (
-          <RoleGuard permissions={PERMISSIONS.MEMBERSHIPS_MANAGE}>
-            <SuspensePage>
-              <MembershipsPage />
-            </SuspensePage>
-          </RoleGuard>
+          <FeatureGuard feature="memberships">
+            <RoleGuard permissions={PERMISSIONS.MEMBERSHIPS_MANAGE}>
+              <SuspensePage>
+                <MembershipsPage />
+              </SuspensePage>
+            </RoleGuard>
+          </FeatureGuard>
+        ),
+      },
+      {
+        path: '/sites',
+        element: (
+          <FeatureGuard feature="multi_site">
+            <RoleGuard permissions={PERMISSIONS.SETTINGS_MANAGE}>
+              <SuspensePage>
+                <SitesPage />
+              </SuspensePage>
+            </RoleGuard>
+          </FeatureGuard>
         ),
       },
       {

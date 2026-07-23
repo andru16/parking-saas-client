@@ -9,6 +9,7 @@ import {
   type NavItem,
 } from '@/modules/navigation/nav.config';
 import { useSidebar } from '@/layouts/app/SidebarContext';
+import { AppLogo } from '@/components/brand/AppLogo';
 
 function planFeaturesFromUser(
   user: ReturnType<typeof useAuth>['user'],
@@ -24,8 +25,6 @@ export function AppSidebar() {
   const { collapsed, mobileOpen, setMobileOpen, toggleCollapsed } = useSidebar();
   const groups = filterNavGroups(user?.permissions, planFeaturesFromUser(user));
   const activeGroupId = findNavGroupByPath(location.pathname)?.id;
-  const appName = import.meta.env.VITE_APP_NAME ?? 'Parking SaaS';
-  const orgName = user?.organization?.name;
 
   return (
     <>
@@ -48,13 +47,14 @@ export function AppSidebar() {
           mobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0',
         ].join(' ')}
       >
-        <div className="flex h-16 shrink-0 items-center gap-2 border-b border-slate-800 px-3">
-          {!collapsed && (
-            <div className="min-w-0 flex-1 px-1">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-teal-400">
-                {appName}
-              </p>
-              <h1 className="truncate text-sm font-semibold text-white">{orgName ?? 'Parqueadero'}</h1>
+        <div className="flex h-20 shrink-0 items-center gap-2 border-b border-slate-800 px-3">
+          {!collapsed ? (
+            <div className="min-w-0 flex-1 overflow-hidden px-1">
+              <AppLogo size="md" className="h-12 max-h-12 max-w-full" />
+            </div>
+          ) : (
+            <div className="flex flex-1 justify-center">
+              <AppLogo variant="mark" size="sm" decorative />
             </div>
           )}
 

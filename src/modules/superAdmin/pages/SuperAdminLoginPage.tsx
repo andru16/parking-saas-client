@@ -8,6 +8,7 @@ import { useSuperAdminAuth } from '@/modules/superAdmin/SuperAdminAuthProvider';
 import { SuperAdminGuestRoute } from '@/modules/superAdmin/SuperAdminGuards';
 import { emailSchema } from '@/lib/validation/contactFields';
 import { HoneypotFields, useFormStartedAt } from '@/lib/validation/HoneypotFields';
+import { AppLogo } from '@/components/brand/AppLogo';
 
 const schema = z.object({
   email: emailSchema,
@@ -60,11 +61,11 @@ function LoginForm() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4">
       <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-8 shadow-2xl shadow-black/40">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-400">
-          Parking SaaS
-        </p>
-        <h1 className="mt-2 text-2xl font-semibold text-white">Super Admin</h1>
-        <p className="mt-1 text-sm text-slate-400">
+        <div className="mb-6 flex justify-center">
+          <AppLogo size="lg" className="max-h-28" />
+        </div>
+        <h1 className="text-center text-2xl font-semibold text-white">Super Admin</h1>
+        <p className="mt-1 text-center text-sm text-slate-400">
           Acceso exclusivo al backoffice de la plataforma. No es el login del parqueadero.
         </p>
 

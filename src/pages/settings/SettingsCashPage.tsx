@@ -5,10 +5,12 @@ import {
   useSaveSettingsSection,
   useSettingsSectionData,
 } from '@/modules/settings/hooks/useSettingsSection';
+import { usePlanEntitlements } from '@/modules/billing/usePlanEntitlements';
 
 export function SettingsCashPage() {
   const query = useSettingsSectionData('cash');
   const save = useSaveSettingsSection('cash');
+  const { limits, canAddMore, limitMessage } = usePlanEntitlements();
 
   if (query.isLoading) {
     return (
@@ -17,6 +19,10 @@ export function SettingsCashPage() {
       </div>
     );
   }
+
+  const maxCash =
+    (query.data?.data as { limits?: { maxCashRegisters?: number | null } } | undefined)?.limits
+      ?.maxCashRegisters ?? limits.maxCashRegisters;
 
   return (
     <SettingsSectionShell
@@ -36,6 +42,9 @@ export function SettingsCashPage() {
             }
           }
           initialTerminals={query.data?.data.terminals ?? []}
+          maxCashRegisters={maxCash ?? null}
+          canAddMore={canAddMore}
+          limitMessage={limitMessage('maxCashRegisters')}
           readOnly={readOnly}
           isSaving={save.isPending}
           onCancel={cancelEditing}
@@ -53,6 +62,9 @@ function CashForm({
   initialPoints,
   initialPolicies,
   initialTerminals,
+  maxCashRegisters,
+  canAddMore,
+  limitMessage: cashLimitMessage,
   readOnly,
   isSaving,
   onCancel,
@@ -61,6 +73,9 @@ function CashForm({
   initialPoints: CashPointConfig[];
   initialPolicies: CashPolicies;
   initialTerminals: CashTerminal[];
+  maxCashRegisters: number | null;
+  canAddMore: (current: number, key: 'maxCashRegisters') => boolean;
+  limitMessage: string | null;
   readOnly: boolean;
   isSaving: boolean;
   onCancel: () => void;
@@ -73,6 +88,7 @@ function CashForm({
   const [cashPoints, setCashPoints] = useState(initialPoints);
   const [policies, setPolicies] = useState(initialPolicies);
   const [terminals, setTerminals] = useState(initialTerminals);
+  const atCashLimit = !canAddMore(cashPoints.length, 'maxCashRegisters');
 
   return (
     <form
@@ -83,7 +99,19 @@ function CashForm({
       }}
     >
       <section className="space-y-3">
-        <h3 className="font-medium text-gray-900">Puntos de caja</h3>
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h3 className="font-medium text-gray-900">Puntos de caja</h3>
+          {maxCashRegisters != null && (
+            <p className="text-xs text-gray-500">
+              Cupo del plan: {cashPoints.length} / {maxCashRegisters}
+            </p>
+          )}
+        </div>
+        {atCashLimit && cashLimitMessage && !readOnly && (
+          <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            {cashLimitMessage}
+          </p>
+        )}
         {cashPoints.map((point, index) => (
           <div key={point.id ?? `new-${index}`} className="grid gap-3 rounded-lg border p-4 md:grid-cols-3">
             <input
@@ -128,7 +156,9 @@ function CashForm({
         {!readOnly && (
           <button
             type="button"
-            className="rounded-lg border border-dashed px-3 py-2 text-sm text-primary-700"
+            disabled={atCashLimit}
+            title={atCashLimit ? (cashLimitMessage ?? undefined) : undefined}
+            className="rounded-lg border border-dashed px-3 py-2 text-sm text-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
             onClick={() =>
               setCashPoints((prev) => [
                 ...prev,

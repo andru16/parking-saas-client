@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { AppLogo } from '@/components/brand/AppLogo';
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -12,13 +13,13 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 via-white to-primary-50">
-      <header className="px-6 py-5">
-        <Link to="/" className="text-xl font-bold text-primary-700 hover:text-primary-800">
-          {appName}
+      <header className="flex justify-center px-6 py-6">
+        <Link to="/" className="rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600">
+          <AppLogo size="lg" />
         </Link>
       </header>
 
-      <main className="flex-1 flex items-center justify-center px-4 py-8">
+      <main className="flex-1 flex items-center justify-center px-4 py-4">
         <div className="w-full max-w-md">
           {(title || subtitle) && (
             <div className="text-center mb-8">

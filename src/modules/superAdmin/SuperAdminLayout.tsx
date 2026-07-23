@@ -2,6 +2,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useSuperAdminAuth } from '@/modules/superAdmin/SuperAdminAuthProvider';
 import { filterSuperAdminNav } from '@/modules/superAdmin/nav.config';
 import { SuperAdminNotificationBell } from '@/modules/superAdmin/SuperAdminNotificationBell';
+import { AppLogo } from '@/components/brand/AppLogo';
 
 export function SuperAdminLayout() {
   const { user, logout } = useSuperAdminAuth();
@@ -18,10 +19,8 @@ export function SuperAdminLayout() {
       <div className="flex min-h-screen">
         <aside className="flex w-60 shrink-0 flex-col bg-slate-950 text-slate-100">
           <div className="border-b border-slate-800 px-5 py-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-400">
-              Parking SaaS
-            </p>
-            <h1 className="mt-1 text-lg font-semibold text-white">Super Admin</h1>
+            <AppLogo size="sm" className="max-h-12" />
+            <h1 className="mt-3 text-lg font-semibold text-white">Super Admin</h1>
             <p className="mt-1 text-xs text-slate-400">Backoffice de plataforma</p>
           </div>
 

@@ -29,11 +29,11 @@ export function useLandingSeo(siteUrl: string) {
     setMeta('property', 'og:url', siteUrl);
     setMeta('property', 'og:site_name', 'Parking SaaS');
     setMeta('property', 'og:locale', 'es_CO');
-    setMeta('property', 'og:image', `${siteUrl}/og-image.svg`);
+    setMeta('property', 'og:image', `${siteUrl}/assets/logos/FullLogo_Transparent.png`);
     setMeta('name', 'twitter:card', 'summary_large_image');
     setMeta('name', 'twitter:title', title);
     setMeta('name', 'twitter:description', description);
-    setMeta('name', 'twitter:image', `${siteUrl}/og-image.svg`);
+    setMeta('name', 'twitter:image', `${siteUrl}/assets/logos/FullLogo_Transparent.png`);
 
     let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
     if (!canonical) {
@@ -64,6 +64,8 @@ export function useLandingSeo(siteUrl: string) {
       },
       description,
       url: siteUrl,
+      image: `${siteUrl}/assets/logos/FullLogo_Transparent.png`,
+      logo: `${siteUrl}/assets/logos/FullLogo_Transparent.png`,
       inLanguage: 'es-CO',
     });
   }, [siteUrl]);

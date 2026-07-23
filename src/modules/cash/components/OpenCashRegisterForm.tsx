@@ -2,7 +2,6 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCashPoints, useOpenCashRegister } from '@/modules/cash/hooks/useCashRegister';
-import { usePrintCash } from '@/modules/printing/hooks/usePrinting';
 
 const schema = z.object({
   cashPointId: z.string().optional(),
@@ -19,7 +18,6 @@ interface OpenCashRegisterFormProps {
 export function OpenCashRegisterForm({ onOpened }: OpenCashRegisterFormProps) {
   const { data: cashPoints = [] } = useCashPoints();
   const openCash = useOpenCashRegister();
-  const printCash = usePrintCash();
 
   const {
     register,
@@ -33,13 +31,11 @@ export function OpenCashRegisterForm({ onOpened }: OpenCashRegisterFormProps) {
 
   async function onSubmit(values: FormValues) {
     try {
-      const res = await openCash.mutateAsync({
+      await openCash.mutateAsync({
         cashPointId: values.cashPointId || undefined,
         openingAmount: values.openingAmount,
         openingNotes: values.openingNotes || undefined,
       });
-      const sessionId = res.data.session.id;
-      void printCash.mutateAsync({ cashRegisterId: sessionId, type: 'cash_open' });
       onOpened?.();
     } catch (err: unknown) {
       const message =

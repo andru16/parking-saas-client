@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { ReportFilters, ReportType } from '@/api/reports';
 import { useAuth } from '@/modules/auth/AuthProvider';
+import { usePlanEntitlements } from '@/modules/billing/usePlanEntitlements';
 import { ReportFiltersForm } from '@/modules/reports/components/ReportFiltersForm';
 import { ReportTable } from '@/modules/reports/components/ReportTable';
 import {
@@ -30,9 +31,12 @@ function emptyFilters(): ReportFilters {
 
 export function ReportsPage() {
   const { logout } = useAuth();
+  const { hasFeature } = usePlanEntitlements();
   const navigate = useNavigate();
   const { data: allowedData, isLoading: loadingAllowed, isError } = useAllowedReports();
   const allowed = Array.isArray(allowedData) ? allowedData : [];
+  const canExportExcel = hasFeature('export_excel');
+  const canExportPdf = hasFeature('export_pdf');
   const [selectedType, setSelectedType] = useState<ReportType | null>(null);
   const [draftFilters, setDraftFilters] = useState<ReportFilters>(emptyFilters);
   const [appliedFilters, setAppliedFilters] = useState<ReportFilters>(emptyFilters);
@@ -146,22 +150,26 @@ export function ReportsPage() {
               ))}
             </div>
             <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                disabled={!hasGenerated || exportMutation.isPending}
-                onClick={() => handleExport('xlsx')}
-                className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Excel
-              </button>
-              <button
-                type="button"
-                disabled={!hasGenerated || exportMutation.isPending}
-                onClick={() => handleExport('pdf')}
-                className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-800 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                PDF
-              </button>
+              {canExportExcel && (
+                <button
+                  type="button"
+                  disabled={!hasGenerated || exportMutation.isPending}
+                  onClick={() => handleExport('xlsx')}
+                  className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Excel
+                </button>
+              )}
+              {canExportPdf && (
+                <button
+                  type="button"
+                  disabled={!hasGenerated || exportMutation.isPending}
+                  onClick={() => handleExport('pdf')}
+                  className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-800 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  PDF
+                </button>
+              )}
               <button
                 type="button"
                 disabled={!hasGenerated || exportMutation.isPending}

@@ -1,5 +1,6 @@
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/modules/auth/AuthProvider';
+import { AppLogo } from '@/components/brand/AppLogo';
 
 /**
  * Shell mínimo para configuración inicial: sin sidebar ni menú de la app.
@@ -7,7 +8,6 @@ import { useAuth } from '@/modules/auth/AuthProvider';
 export function SetupLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const appName = import.meta.env.VITE_APP_NAME ?? 'Parking SaaS';
 
   async function handleLogout() {
     await logout();
@@ -18,14 +18,9 @@ export function SetupLayout() {
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 via-white to-primary-50">
       <header className="border-b border-slate-200/80 bg-white/90 backdrop-blur-sm">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-600 text-sm font-bold text-white">
-              P
-            </span>
-            <div>
-              <p className="text-sm font-bold text-slate-900">{appName}</p>
-              <p className="text-[11px] text-slate-500">Configuración inicial</p>
-            </div>
+          <div className="flex items-center gap-3">
+            <AppLogo size="xs" />
+            <p className="text-[11px] text-slate-500">Configuración inicial</p>
           </div>
           <div className="flex items-center gap-3">
             {user && (

@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { GeneralInfoData } from '@/api/setup';
+import { LocationFields } from '@/modules/locations/LocationFields';
 import { SettingsFormActions } from '@/modules/settings/components/SettingsSectionShell';
 import { CURRENCIES, DATE_FORMATS, TIMEZONES } from '../../constants';
 import { generalInfoSchema, pickAllowed, type GeneralInfoFormValues } from '../../schemas/setup.schemas';
@@ -39,6 +40,7 @@ export function GeneralInfoStepForm({
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<GeneralInfoFormValues>({
     resolver: zodResolver(generalInfoSchema),
@@ -51,7 +53,7 @@ export function GeneralInfoStepForm({
       address: initialData?.address ?? '',
       city: initialData?.city ?? '',
       stateOrDepartment: initialData?.stateOrDepartment ?? '',
-      country: initialData?.country ?? '',
+      country: initialData?.country || 'Colombia',
       phone: initialData?.phone ?? '',
       email: initialData?.email ?? '',
       timezone: pickAllowed(initialData?.timezone, TIMEZONES, 'America/Bogota'),
@@ -60,6 +62,10 @@ export function GeneralInfoStepForm({
       timeFormat: (initialData?.timeFormat as '12h' | '24h') || '24h',
     },
   });
+
+  const country = watch('country');
+  const stateOrDepartment = watch('stateOrDepartment');
+  const city = watch('city');
 
   useEffect(() => {
     if (!registerStepSubmit) return;
@@ -116,15 +122,27 @@ export function GeneralInfoStepForm({
           <FormField label="Dirección *" error={errors.address?.message}>
             <TextInput {...register('address')} />
           </FormField>
-          <FormField label="Ciudad *" error={errors.city?.message}>
-            <TextInput {...register('city')} />
-          </FormField>
-          <FormField label="Departamento / Estado" error={errors.stateOrDepartment?.message}>
-            <TextInput {...register('stateOrDepartment')} />
-          </FormField>
-          <FormField label="País *" error={errors.country?.message}>
-            <TextInput {...register('country')} />
-          </FormField>
+        </div>
+
+        <LocationFields
+          disabled={readOnly}
+          value={{ country, stateOrDepartment, city }}
+          onChange={(next) => {
+            setValue('country', next.country, { shouldDirty: true, shouldValidate: true });
+            setValue('stateOrDepartment', next.stateOrDepartment, {
+              shouldDirty: true,
+              shouldValidate: true,
+            });
+            setValue('city', next.city, { shouldDirty: true, shouldValidate: true });
+          }}
+          errors={{
+            country: errors.country?.message,
+            stateOrDepartment: errors.stateOrDepartment?.message,
+            city: errors.city?.message,
+          }}
+        />
+
+        <div className="grid gap-4 md:grid-cols-2">
           <FormField label="Zona horaria *" error={errors.timezone?.message}>
             <SelectInput {...register('timezone')}>
               {TIMEZONES.map((tz) => (
@@ -159,7 +177,6 @@ export function GeneralInfoStepForm({
             </SelectInput>
           </FormField>
         </div>
-       
       </fieldset>
 
       {!autosave && !readOnly && onCancel && (

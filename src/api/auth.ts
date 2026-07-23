@@ -40,6 +40,13 @@ export interface AuthUser {
         color?: string;
         isTrialPlan?: boolean;
         features?: Record<string, boolean>;
+        limits?: {
+          maxUsers?: number | null;
+          maxCashRegisters?: number | null;
+          maxSites?: number | null;
+          maxActiveVehicles?: number | null;
+          maxDailyTickets?: number | null;
+        };
       } | null;
       status: string | null;
       billingCycle: string | null;
@@ -49,7 +56,10 @@ export interface AuthUser {
       nextRenewalAt: string | null;
       autoRenewal: boolean;
       gracePeriodEndsAt?: string | null;
-      accessMode?: 'full' | 'read_only' | 'none';
+      accessMode?: 'full' | 'read_only' | 'none' | 'activation_pending' | 'blocked';
+      isTrialPremium?: boolean;
+      isAwaitingActivation?: boolean;
+      isBlocked?: boolean;
     } | null;
   } | null;
 }

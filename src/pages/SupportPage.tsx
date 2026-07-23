@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { Mail, MessageCircle } from 'lucide-react';
 import type { SupportCategory, SupportPriority } from '@/api/support';
 import {
   useCreateSupportTicket,
@@ -8,6 +10,7 @@ import {
 } from '@/modules/support/hooks/useSupport';
 import { hasPermission, PERMISSIONS } from '@/modules/auth/permissions';
 import { useAuth } from '@/modules/auth/AuthProvider';
+import { fetchSupportContact } from '@/api/subscriptionActivation';
 
 const STATUS_COLORS: Record<string, string> = {
   open: 'bg-sky-50 text-sky-800',
@@ -25,6 +28,15 @@ export function SupportPage() {
   const [status, setStatus] = useState('');
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
+
+  const supportContactQuery = useQuery({
+    queryKey: ['activation', 'support'],
+    queryFn: fetchSupportContact,
+  });
+  const support = supportContactQuery.data;
+  const whatsappHref = support?.whatsapp
+    ? `https://wa.me/${support.whatsapp.replace(/\D/g, '')}`
+    : null;
 
   const { data, isLoading } = useSupportList({
     page,
@@ -51,6 +63,39 @@ export function SupportPage() {
           </button>
         )}
       </div>
+
+      {(support?.email || whatsappHref || support?.schedule) && (
+        <div className="grid gap-3 sm:grid-cols-3">
+          {whatsappHref && (
+            <a
+              href={whatsappHref}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-sm font-medium text-emerald-900 transition hover:bg-emerald-50"
+            >
+              <MessageCircle className="h-5 w-5 shrink-0" aria-hidden />
+              WhatsApp
+            </a>
+          )}
+          {support?.email && (
+            <a
+              href={`mailto:${support.email}`}
+              className="flex items-center gap-3 rounded-2xl border border-sky-200 bg-sky-50/80 px-4 py-3 text-sm font-medium text-sky-900 transition hover:bg-sky-50"
+            >
+              <Mail className="h-5 w-5 shrink-0" aria-hidden />
+              {support.email}
+            </a>
+          )}
+          {support?.schedule && (
+            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                Horario
+              </p>
+              <p className="mt-1 font-medium text-slate-800">{support.schedule}</p>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-2">
         <input

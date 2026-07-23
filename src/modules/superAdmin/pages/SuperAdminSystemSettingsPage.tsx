@@ -20,7 +20,8 @@ interface PlatformSettings {
     passwordRequireNumber: boolean;
     passwordRequireSpecial: boolean;
   };
-  saas: { defaultTrialDays: number; gracePeriodDays: number };
+  saas: { defaultTrialDays: number; gracePeriodDays: number; trialPremiumDays: number };
+  support: { email: string; whatsapp: string; schedule: string };
   defaults: { timezone: string; language: string; currency: string };
 }
 
@@ -38,7 +39,20 @@ export function SuperAdminSystemSettingsPage() {
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (query.data) setForm(structuredClone(query.data));
+    if (query.data) {
+      const next = structuredClone(query.data);
+      next.saas = {
+        defaultTrialDays: next.saas?.defaultTrialDays ?? 15,
+        gracePeriodDays: next.saas?.gracePeriodDays ?? 5,
+        trialPremiumDays: next.saas?.trialPremiumDays ?? 3,
+      };
+      next.support = {
+        email: next.support?.email ?? '',
+        whatsapp: next.support?.whatsapp ?? '',
+        schedule: next.support?.schedule ?? '',
+      };
+      setForm(next);
+    }
   }, [query.data]);
 
   const save = useMutation({
@@ -240,7 +254,7 @@ export function SuperAdminSystemSettingsPage() {
       </Section>
 
       <Section title="SaaS (trial y gracia)">
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-3">
           <Field label="Días de trial por defecto">
             <input
               type="number"
@@ -250,6 +264,19 @@ export function SuperAdminSystemSettingsPage() {
                 setForm({
                   ...form,
                   saas: { ...form.saas, defaultTrialDays: Number(e.target.value) },
+                })
+              }
+            />
+          </Field>
+          <Field label="Días de trial premium">
+            <input
+              type="number"
+              className={inputClass}
+              value={form.saas.trialPremiumDays}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  saas: { ...form.saas, trialPremiumDays: Number(e.target.value) },
                 })
               }
             />
@@ -265,6 +292,50 @@ export function SuperAdminSystemSettingsPage() {
                   saas: { ...form.saas, gracePeriodDays: Number(e.target.value) },
                 })
               }
+            />
+          </Field>
+        </div>
+      </Section>
+
+      <Section title="Soporte">
+        <Field label="Correo de soporte">
+          <input
+            type="email"
+            className={inputClass}
+            value={form.support.email}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                support: { ...form.support, email: e.target.value },
+              })
+            }
+          />
+        </Field>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="WhatsApp">
+            <input
+              className={inputClass}
+              value={form.support.whatsapp}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  support: { ...form.support, whatsapp: e.target.value },
+                })
+              }
+              placeholder="+57 300 000 0000"
+            />
+          </Field>
+          <Field label="Horario de atención">
+            <input
+              className={inputClass}
+              value={form.support.schedule}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  support: { ...form.support, schedule: e.target.value },
+                })
+              }
+              placeholder="Lun–Vie 8:00–18:00 (COT)"
             />
           </Field>
         </div>

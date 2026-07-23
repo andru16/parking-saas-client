@@ -47,7 +47,8 @@ api.interceptors.response.use(
     ) {
       originalRequest._retry = true;
 
-      const newToken = await refreshAccessToken();
+      // Deduplica refrescos concurrentes (varias 401 a la vez tras ~15m).
+      const newToken = await refreshAccessToken({ silent: false });
 
       if (newToken) {
         originalRequest.headers.Authorization = `Bearer ${newToken}`;

@@ -40,8 +40,21 @@ export function usePrintConfig() {
       const res = await getPrintConfig();
       return res.data.config;
     },
-    staleTime: 60_000,
+    staleTime: 30_000,
   });
+}
+
+/** Lee flags de autoimpresión desde la config en caché (o el valor pasado). */
+export function shouldAutoPrintEntry(
+  config: { print?: { generateEntryTicket?: boolean } } | null | undefined,
+): boolean {
+  return config?.print?.generateEntryTicket !== false;
+}
+
+export function shouldAutoPrintExit(
+  config: { print?: { generateExitTicket?: boolean } } | null | undefined,
+): boolean {
+  return config?.print?.generateExitTicket !== false;
 }
 
 export function usePrintPreview(

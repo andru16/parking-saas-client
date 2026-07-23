@@ -16,7 +16,7 @@ function resolveSiteUrl() {
   if (typeof window !== 'undefined' && window.location?.origin) {
     return window.location.origin;
   }
-  return import.meta.env.VITE_APP_URL || 'https://parkingsaas.co';
+  return import.meta.env.VITE_APP_URL || 'https://parking-saas-client.vercel.app';
 }
 
 export function LandingPage() {

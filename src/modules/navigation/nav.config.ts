@@ -216,8 +216,8 @@ export const NAV_GROUPS: NavGroup[] = [
         path: '/sites',
         permissions: [PERMISSIONS.SETTINGS_MANAGE],
         icon: Building2,
-        enabled: false,
-        comingSoon: true,
+        enabled: true,
+        comingSoon: false,
         featureFlag: 'multi_site',
       },
       {
@@ -388,6 +388,7 @@ export const ROUTE_LABELS: Record<string, string> = {
   '/support': 'Centro de Soporte',
   '/notifications': 'Notificaciones',
   '/settings': 'Configuración',
+  '/sites': 'Sedes',
   '/settings/general': 'Información general',
   '/settings/operational': 'Operación',
   '/settings/categories': 'Categorías',

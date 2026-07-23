@@ -39,6 +39,7 @@ export interface CashPointConfig {
   name: string;
   status: 'active' | 'inactive';
   displayOrder: number;
+  siteId?: string | null;
 }
 
 export interface CashPolicies {

@@ -12,9 +12,11 @@ import {
 } from '@/api/users';
 import { validatePersonContactFields } from '@/lib/validation/contactFields';
 import { confirmAction, showError, showSecret, showSuccess } from '@/lib/dialogs';
+import { usePlanEntitlements } from '@/modules/billing/usePlanEntitlements';
 
 export function SettingsUsersPage() {
   const qc = useQueryClient();
+  const { limits, canAddMore, limitMessage } = usePlanEntitlements();
   const usersQuery = useQuery({
     queryKey: ['org-users'],
     queryFn: async () => (await listOrgUsers()).data.users,
@@ -26,6 +28,10 @@ export function SettingsUsersPage() {
 
   const [editing, setEditing] = useState<OrgUser | null>(null);
   const [creating, setCreating] = useState(false);
+
+  const users = usersQuery.data ?? [];
+  const atUserLimit = !canAddMore(users.length, 'maxUsers');
+  const userLimitHint = limitMessage('maxUsers');
 
   const saveMutation = useMutation({
     mutationFn: async (payload: {
@@ -100,7 +106,6 @@ export function SettingsUsersPage() {
   });
 
   const roles = rolesQuery.data ?? [];
-  const users = usersQuery.data ?? [];
 
   async function handleResetPassword(user: OrgUser) {
     const ok = await confirmAction({
@@ -117,7 +122,12 @@ export function SettingsUsersPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-gray-900">Usuarios</h2>
-          <p className="text-sm text-gray-600">Administre usuarios de su parqueadero.</p>
+          <p className="text-sm text-gray-600">
+            Administre usuarios de su parqueadero.
+            {limits.maxUsers != null
+              ? ` Cupo del plan: ${users.length} / ${limits.maxUsers}.`
+              : ''}
+          </p>
         </div>
         <div className="flex gap-2">
           <Link
@@ -128,16 +138,24 @@ export function SettingsUsersPage() {
           </Link>
           <button
             type="button"
+            disabled={atUserLimit}
+            title={atUserLimit ? (userLimitHint ?? undefined) : undefined}
             onClick={() => {
               setCreating(true);
               setEditing(null);
             }}
-            className="rounded-lg bg-primary-600 px-3 py-2 text-sm font-medium text-white hover:bg-primary-700"
+            className="rounded-lg bg-primary-600 px-3 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Nuevo usuario
           </button>
         </div>
       </div>
+
+      {atUserLimit && userLimitHint && (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          {userLimitHint}
+        </p>
+      )}
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <table className="min-w-full text-left text-sm">

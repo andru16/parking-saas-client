@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useState, type RefObject } from 'react';
 import type { PlateLookupResult, TicketItem, VehicleCategoryOption } from '@/api/tickets';
 import { useOpenTicket, usePlateLookup, useVehicleCategories } from '@/modules/operations/hooks/useOperations';
-import { usePrintConfig, usePrintTicket } from '@/modules/printing/hooks/usePrinting';
+import { usePrintConfig, usePrintTicket, shouldAutoPrintEntry } from '@/modules/printing/hooks/usePrinting';
 import {
   normalizePlate,
   resolveCategoryFromPlate,
@@ -139,7 +139,7 @@ export function EntryPanel({ onTicketOpened, plateInputRef, cashOpen }: EntryPan
       const opened = res.data.ticket;
       onTicketOpened(opened);
 
-      if (printConfig?.print?.generateEntryTicket !== false) {
+      if (shouldAutoPrintEntry(printConfig)) {
         void printTicket.mutateAsync({ ticketId: opened.id, type: 'entry' });
       }
 

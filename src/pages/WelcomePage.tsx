@@ -4,6 +4,7 @@ import { PartyPopper } from 'lucide-react';
 import { useAuth } from '@/modules/auth/AuthProvider';
 import { ConfettiBurst } from '@/modules/setup/components/ConfettiBurst';
 import { claimSetupWelcomeAccess, clearSetupWelcome } from '@/modules/setup/setupWelcome';
+import { AppLogo } from '@/components/brand/AppLogo';
 
 const AUTO_REDIRECT_MS = 5500;
 
@@ -65,6 +66,9 @@ export function WelcomePage() {
       <ConfettiBurst />
 
       <div className="relative z-10 w-full max-w-lg rounded-3xl border border-slate-200/80 bg-white/95 p-8 text-center shadow-xl shadow-slate-900/5 backdrop-blur">
+        <div className="mb-4 flex justify-center">
+          <AppLogo size="md" className="max-h-20" />
+        </div>
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-600 text-white shadow-lg shadow-primary-600/30">
           <PartyPopper className="h-8 w-8" aria-hidden />
         </div>

@@ -1,6 +1,8 @@
 /**
  * Mockup CSS del dashboard — sin imágenes pesadas, lazy-friendly.
  */
+import { AppLogo } from '@/components/brand/AppLogo';
+
 export function DashboardMockup({ className = '' }: { className?: string }) {
   return (
     <div
@@ -17,7 +19,9 @@ export function DashboardMockup({ className = '' }: { className?: string }) {
 
       <div className="grid gap-4 p-4 sm:grid-cols-[140px_1fr]">
         <aside className="hidden space-y-2 rounded-xl bg-slate-900 p-3 text-[11px] text-slate-300 sm:block" aria-hidden>
-          <div className="mb-3 text-xs font-semibold text-white">Parking SaaS</div>
+          <div className="mb-3">
+            <AppLogo variant="mark" size="xs" decorative />
+          </div>
           {['Operación', 'Dashboard', 'Caja', 'Clientes', 'Reportes', 'Config'].map((item, i) => (
             <div
               key={item}

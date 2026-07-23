@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { APP_NAME, APP_TAGLINE } from '@/modules/landing/data/content';
+import { APP_TAGLINE } from '@/modules/landing/data/content';
 import { DashboardMockup } from '@/modules/landing/components/DashboardMockup';
+import { AppLogo } from '@/components/brand/AppLogo';
 
 export function LandingHero() {
   return (
@@ -21,12 +22,10 @@ export function LandingHero() {
 
       <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:gap-10 lg:px-8 lg:py-24">
         <div className="landing-hero-copy max-w-xl">
-          <p className="text-4xl font-extrabold tracking-tight text-primary-800 sm:text-5xl lg:text-[3.25rem] lg:leading-[1.05]">
-            {APP_NAME}
-          </p>
+          <AppLogo size="xl" className="max-w-[280px] sm:max-w-[320px]" />
           <h1
             id="hero-heading"
-            className="mt-4 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl lg:text-4xl"
+            className="mt-6 text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl lg:text-4xl"
           >
             {APP_TAGLINE}
           </h1>

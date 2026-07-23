@@ -26,6 +26,7 @@ function LoginFormContent() {
   const navigate = useNavigate();
   const location = useLocation();
   const [error, setError] = useState<string | null>(null);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const formStartedAt = useFormStartedAt();
 
@@ -34,9 +35,12 @@ function LoginFormContent() {
   const {
     register,
     handleSubmit,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
+    mode: 'onBlur',
+    reValidateMode: 'onChange',
     defaultValues: {
       email: '',
       password: '',
@@ -48,6 +52,7 @@ function LoginFormContent() {
 
   const onSubmit = handleSubmit(async (values) => {
     setError(null);
+    setUnverifiedEmail(null);
     try {
       const loggedInUser = await login(values.email, values.password, values.rememberMe, {
         website: values.website || '',
@@ -57,11 +62,17 @@ function LoginFormContent() {
     } catch (err) {
       if (isAxiosError(err)) {
         const message = err.response?.data?.message;
-        const errors = err.response?.data?.errors;
+        const errors = err.response?.data?.errors as
+          | { code?: string; email?: string; message?: string }[]
+          | undefined;
+        const notVerified = errors?.find((e) => e.code === 'EMAIL_NOT_VERIFIED');
+        if (notVerified) {
+          setUnverifiedEmail(notVerified.email ?? getValues('email'));
+        }
         if (typeof message === 'string') {
           setError(message);
         } else if (Array.isArray(errors) && errors.length > 0) {
-          setError(errors.map((e: { message?: string }) => e.message).join('. '));
+          setError(errors.map((e) => e.message).filter(Boolean).join('. ') || 'Error de acceso');
         } else {
           setError('No se pudo iniciar sesión. Verifique sus credenciales.');
         }
@@ -138,7 +149,15 @@ function LoginFormContent() {
 
           {error && (
             <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-              {error}
+              <p>{error}</p>
+              {unverifiedEmail && (
+                <Link
+                  to={`/verificar-email?email=${encodeURIComponent(unverifiedEmail)}`}
+                  className="mt-2 inline-block font-semibold text-primary-700 hover:underline"
+                >
+                  Verificar o reenviar enlace
+                </Link>
+              )}
             </div>
           )}
 
