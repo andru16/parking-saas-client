@@ -17,10 +17,11 @@ export function LandingCta() {
       <div className="relative mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
         <Reveal>
           <h2 id="cta-heading" className="text-3xl font-extrabold tracking-tight text-white sm:text-5xl">
-            Empieza hoy mismo
+            Empieza a digitalizar tu parqueadero
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-base text-primary-100 sm:text-lg">
-            Crea tu cuenta gratis, configura tu parqueadero y empieza a controlar la operación en minutos.
+            Crea tu cuenta gratis, configura tu sistema de estacionamiento y controla ingresos, salidas
+            y caja en minutos.
           </p>
           <Link
             to="/registro"

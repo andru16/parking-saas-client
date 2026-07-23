@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://parkingsaas.co/sitemap.xml
+# URL pública actual (Vercel). Actualizar cuando conectes un dominio propio.
+Sitemap: https://parking-saas-client.vercel.app/sitemap.xml

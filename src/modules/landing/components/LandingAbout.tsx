@@ -12,12 +12,13 @@ export function LandingAbout() {
                 Sobre {APP_NAME}
               </h2>
               <p className="mt-4 text-base leading-relaxed text-slate-600 sm:text-lg">
-                Nacimos para digitalizar estacionamientos y facilitar la administración diaria: menos papeles,
-                menos errores y más visibilidad sobre lo que realmente genera ingresos.
+                Nacimos para digitalizar parqueaderos y estacionamientos: menos papeles, menos errores
+                y más visibilidad sobre lo que realmente genera ingresos. Somos un software y sistema
+                para parqueaderos pensado para la operación diaria.
               </p>
               <p className="mt-4 text-base leading-relaxed text-slate-600">
-                Construimos una plataforma moderna para que dueños, administradores y cajeros trabajen con la misma
-                verdad operativa — desde el primer ticket hasta el reporte del mes.
+                Construimos una app moderna para que dueños, administradores y cajeros trabajen con la
+                misma información — desde el primer ticket hasta el reporte del mes.
               </p>
             </div>
           </Reveal>

@@ -1,12 +1,11 @@
 import { useEffect } from 'react';
+import { SEO_DESCRIPTION, SEO_KEYWORDS, SEO_TITLE } from '@/modules/landing/data/seo';
 
 export function useLandingSeo(siteUrl: string) {
   useEffect(() => {
-    const title = 'Parking SaaS | Software para administrar estacionamientos';
-    const description =
-      'Controla ingresos, salidas, pagos, clientes y reportes desde una sola plataforma. Crea tu cuenta gratis y digitaliza tu parqueadero.';
-    const keywords =
-      'software estacionamiento, parking saas, gestión parqueaderos, control de parqueadero, reportes parking, sistema de tickets parking Colombia';
+    const title = SEO_TITLE;
+    const description = SEO_DESCRIPTION;
+    const keywords = SEO_KEYWORDS;
 
     document.title = title;
 
@@ -55,6 +54,12 @@ export function useLandingSeo(siteUrl: string) {
       '@context': 'https://schema.org',
       '@type': 'SoftwareApplication',
       name: 'Parking SaaS',
+      alternateName: [
+        'Software para parqueaderos',
+        'Sistema para parqueaderos',
+        'App para parqueaderos',
+        'Software de estacionamiento',
+      ],
       applicationCategory: 'BusinessApplication',
       operatingSystem: 'Web',
       offers: {
@@ -67,6 +72,7 @@ export function useLandingSeo(siteUrl: string) {
       image: `${siteUrl}/assets/logos/FullLogo_Transparent.png`,
       logo: `${siteUrl}/assets/logos/FullLogo_Transparent.png`,
       inLanguage: 'es-CO',
+      keywords: SEO_KEYWORDS,
     });
   }, [siteUrl]);
 }

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { APP_TAGLINE } from '@/modules/landing/data/content';
+import { APP_HERO_SUPPORT, APP_TAGLINE } from '@/modules/landing/data/content';
 import { DashboardMockup } from '@/modules/landing/components/DashboardMockup';
 import { AppLogo } from '@/components/brand/AppLogo';
 
@@ -30,7 +30,7 @@ export function LandingHero() {
             {APP_TAGLINE}
           </h1>
           <p className="mt-4 text-base leading-relaxed text-slate-600 sm:text-lg">
-            Controla ingresos, salidas, pagos, clientes y reportes desde una sola plataforma.
+            {APP_HERO_SUPPORT}
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link

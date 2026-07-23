@@ -9,7 +9,10 @@ import {
 } from 'lucide-react';
 
 export const APP_NAME = 'Parking SaaS';
-export const APP_TAGLINE = 'Administra tu estacionamiento de forma inteligente';
+export const APP_TAGLINE =
+  'Software y app para parqueaderos: administra tu estacionamiento de forma inteligente';
+export const APP_HERO_SUPPORT =
+  'Sistema para parqueaderos en la nube: ingresos, salidas, pagos, tickets, caja y reportes en una sola plataforma.';
 
 export const NAV_LINKS = [
   { href: '#beneficios', label: 'Beneficios' },
@@ -137,14 +140,19 @@ export const TESTIMONIALS = [
 
 export const FAQ_ITEMS = [
   {
+    question: '¿Qué es Parking SaaS?',
+    answer:
+      'Es un software y app para parqueaderos: un sistema de estacionamiento en la nube para controlar ingresos, salidas, cobros, caja y reportes sin instalar programas.',
+  },
+  {
     question: '¿Necesito instalar algo?',
     answer:
-      'No. Parking SaaS funciona en el navegador. Solo necesitas internet y un dispositivo compatible (computador, tablet o celular).',
+      'No. El sistema para parqueaderos funciona en el navegador. Solo necesitas internet y un dispositivo compatible (computador, tablet o celular).',
   },
   {
     question: '¿Funciona desde celular?',
     answer:
-      'Sí. La interfaz está pensada para usarse en escritorio y en dispositivos móviles, ideal para operación en mostrador o supervisión remota.',
+      'Sí. La aplicación para parqueaderos está pensada para escritorio y móviles, ideal para operación en mostrador o supervisión remota.',
   },
   {
     question: '¿Tiene prueba gratuita?',
@@ -159,7 +167,7 @@ export const FAQ_ITEMS = [
   {
     question: '¿Puedo gestionar varios parqueaderos?',
     answer:
-      'Con el plan Profesional o Empresarial puedes operar múltiples sedes, usuarios y reportes desde una sola cuenta de organización.',
+      'Sí. Con el plan Profesional o Empresarial puedes operar múltiples sedes, usuarios y reportes desde una sola cuenta.',
   },
 ];
 
